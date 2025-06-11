@@ -9,72 +9,162 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      linkedin_posts: {
+      daily_logs: {
         Row: {
-          error_message: string | null
-          id: string
-          linkedin_url: string
-          processed_at: string
-          status: string
-          telegram_message_id: string | null
-          user_id: string
-        }
-        Insert: {
-          error_message?: string | null
-          id?: string
-          linkedin_url: string
-          processed_at?: string
-          status?: string
-          telegram_message_id?: string | null
-          user_id: string
-        }
-        Update: {
-          error_message?: string | null
-          id?: string
-          linkedin_url?: string
-          processed_at?: string
-          status?: string
-          telegram_message_id?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      telegram_bots: {
-        Row: {
-          bot_token: string
-          bot_username: string
-          channel_id: string | null
           created_at: string
-          group_chat_id: string | null
+          date: string
+          hours: number
           id: string
-          is_active: boolean
-          topic_id: string | null
+          notes: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          bot_token: string
-          bot_username: string
-          channel_id?: string | null
           created_at?: string
-          group_chat_id?: string | null
+          date: string
+          hours?: number
           id?: string
-          is_active?: boolean
-          topic_id?: string | null
+          notes?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          bot_token?: string
-          bot_username?: string
-          channel_id?: string | null
           created_at?: string
-          group_chat_id?: string | null
+          date?: string
+          hours?: number
           id?: string
-          is_active?: boolean
-          topic_id?: string | null
+          notes?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          timezone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      timer_sessions: {
+        Row: {
+          created_at: string
+          date: string
+          duration_seconds: number | null
+          end_time: string | null
+          id: string
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          duration_seconds?: number | null
+          end_time?: string | null
+          id?: string
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          duration_seconds?: number | null
+          end_time?: string | null
+          id?: string
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      yearly_goals: {
+        Row: {
+          created_at: string
+          description: string | null
+          estimated_hours: number
+          id: string
+          logged_hours: number
+          title: string
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          estimated_hours: number
+          id?: string
+          logged_hours?: number
+          title: string
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number
+          id?: string
+          logged_hours?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+          year?: number
         }
         Relationships: []
       }
