@@ -2,8 +2,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { useSupabaseData } from './store/useSupabaseData';
+import { useSupabaseData, DailyLog, YearlyGoal, Task, TimerSession } from './store/useSupabaseData';
 import { useSupabaseCalculations } from './store/useSupabaseCalculations';
+import { toast } from 'sonner';
 
 export const useSupabaseStore = () => {
   const { user } = useAuth();
@@ -22,9 +23,12 @@ export const useSupabaseStore = () => {
   } = useSupabaseData();
 
   const { 
+    getCurrentDateIST,
+    getTodayLog,
     getTodayProgress, 
     getYearlyProgress, 
-    getWeeklyProgress 
+    getWeeklyProgress,
+    getDailyTarget
   } = useSupabaseCalculations(dailyLogs, yearlyGoals);
 
   const loadUserData = useCallback(async () => {
@@ -49,7 +53,10 @@ export const useSupabaseStore = () => {
               console.warn('Failed to load daily logs:', error);
               return [];
             }
-            return data || [];
+            return (data || []).map(log => ({
+              ...log,
+              tasks: [] // Will be populated from tasks table
+            }));
           }),
 
         supabase
@@ -95,7 +102,19 @@ export const useSupabaseStore = () => {
 
       const [logsData, goalsData, tasksData, sessionsData] = await Promise.all(promises);
       
-      setDailyLogs(logsData);
+      // Group tasks by date and attach to daily logs
+      const groupedTasks = tasksData.reduce((acc: { [key: string]: Task[] }, task: Task) => {
+        if (!acc[task.date]) acc[task.date] = [];
+        acc[task.date].push(task);
+        return acc;
+      }, {});
+
+      const logsWithTasks = logsData.map((log: DailyLog) => ({
+        ...log,
+        tasks: groupedTasks[log.date] || []
+      }));
+      
+      setDailyLogs(logsWithTasks);
       setYearlyGoals(goalsData);
       setTasks(tasksData);
       setTimerSessions(sessionsData);
@@ -107,6 +126,114 @@ export const useSupabaseStore = () => {
       setIsLoading(false);
     }
   }, [user, setDailyLogs, setYearlyGoals, setTasks, setTimerSessions]);
+
+  // Task management functions
+  const addTask = async (title: string, description?: string, targetDate?: string) => {
+    if (!user) return;
+    
+    const date = targetDate === 'tomorrow' 
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      : getCurrentDateIST();
+
+    const { error } = await supabase
+      .from('tasks')
+      .insert([{
+        user_id: user.id,
+        title,
+        description,
+        date,
+        completed: false
+      }]);
+
+    if (error) throw error;
+    await loadUserData();
+  };
+
+  const updateTask = async (taskId: string, title: string) => {
+    const { error } = await supabase
+      .from('tasks')
+      .update({ title })
+      .eq('id', taskId);
+
+    if (error) throw error;
+    await loadUserData();
+  };
+
+  const toggleTask = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({ completed: !task.completed })
+      .eq('id', taskId);
+
+    if (error) throw error;
+    await loadUserData();
+  };
+
+  const moveTaskToTomorrow = async (taskId: string) => {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    const { error } = await supabase
+      .from('tasks')
+      .update({ date: tomorrow })
+      .eq('id', taskId);
+
+    if (error) throw error;
+    await loadUserData();
+  };
+
+  const deleteTask = async (taskId: string) => {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', taskId);
+
+    if (error) throw error;
+    await loadUserData();
+  };
+
+  // Yearly goals functions
+  const addYearlyGoal = async (title: string, description: string, estimatedHours: number) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('yearly_goals')
+      .insert([{
+        user_id: user.id,
+        title,
+        description,
+        estimated_hours: estimatedHours,
+        logged_hours: 0,
+        year: new Date().getFullYear()
+      }]);
+
+    if (error) {
+      console.error('Error adding yearly goal:', error);
+      toast.error('Failed to add yearly goal');
+      return;
+    }
+
+    toast.success('Yearly goal added successfully! 🎯');
+    await loadUserData();
+  };
+
+  const updateYearlyGoalHours = async (goalId: string, loggedHours: number) => {
+    const { error } = await supabase
+      .from('yearly_goals')
+      .update({ logged_hours: loggedHours })
+      .eq('id', goalId);
+
+    if (error) {
+      console.error('Error updating yearly goal hours:', error);
+      toast.error('Failed to update goal hours');
+      return;
+    }
+
+    toast.success('Goal hours updated! ✅');
+    await loadUserData();
+  };
 
   // Load data when component mounts or user changes
   useEffect(() => {
@@ -137,9 +264,26 @@ export const useSupabaseStore = () => {
     // Actions
     loadUserData,
     
+    // Task functions
+    addTask,
+    updateTask,
+    toggleTask,
+    moveTaskToTomorrow,
+    deleteTask,
+    
+    // Yearly goals functions
+    addYearlyGoal,
+    updateYearlyGoalHours,
+    
     // Calculations
+    getCurrentDateIST,
+    getTodayLog,
     getTodayProgress,
     getYearlyProgress,
     getWeeklyProgress,
+    getDailyTarget,
   };
 };
+
+// Export types for use in other files
+export type { DailyLog, YearlyGoal, Task, TimerSession };
