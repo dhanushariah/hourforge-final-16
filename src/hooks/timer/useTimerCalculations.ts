@@ -1,21 +1,28 @@
 
 import { useCallback } from 'react';
-import { TimerStorage } from './useTimerState';
 
 export const useTimerCalculations = () => {
-  const calculateElapsedSeconds = useCallback((storage: TimerStorage): number => {
-    if (!storage) return 0;
+  const formatTime = useCallback((seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, []);
 
-    const now = Date.now();
-    let totalElapsed = 0;
-
-    if (storage.state === 'running') {
-      totalElapsed = now - storage.realStartTime - storage.totalPausedDuration;
-    } else if (storage.state === 'paused' && storage.lastPauseTime) {
-      totalElapsed = storage.lastPauseTime - storage.realStartTime - storage.totalPausedDuration;
+  const calculateElapsedSeconds = useCallback((startTime: number, currentTime: number, pausedDuration: number, state: string): number => {
+    if (!startTime || state === 'idle') return 0;
+    
+    if (state === 'running') {
+      return Math.max(0, Math.floor((currentTime - startTime - pausedDuration) / 1000));
+    } else if (state === 'paused') {
+      return Math.max(0, Math.floor((currentTime - startTime - pausedDuration) / 1000));
     }
+    
+    return 0;
+  }, []);
 
-    return Math.max(0, Math.floor(totalElapsed / 1000));
+  const calculateHours = useCallback((seconds: number): number => {
+    return seconds / 3600;
   }, []);
 
   const getCurrentDateIST = () => {
@@ -32,7 +39,9 @@ export const useTimerCalculations = () => {
   };
 
   return {
+    formatTime,
     calculateElapsedSeconds,
+    calculateHours,
     getCurrentDateIST,
     getCurrentTimeIST,
   };
