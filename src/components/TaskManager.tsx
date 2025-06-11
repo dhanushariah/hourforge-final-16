@@ -13,6 +13,7 @@ const TaskManager = () => {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0); // Force component re-render
   
   const todayLog = getTodayLog();
   
@@ -26,7 +27,7 @@ const TaskManager = () => {
     return () => window.removeEventListener('timer-saved', handleTimerSaved);
   }, [loadUserData]);
   
-  // Get tomorrow's tasks from dailyLogs with proper date handling
+  // Get tomorrow's tasks with better handling
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDate = tomorrow.toISOString().split('T')[0];
@@ -44,6 +45,12 @@ const TaskManager = () => {
     try {
       await addTask(newTask.trim(), undefined, targetDate);
       setNewTask("");
+      
+      // Force immediate update for tomorrow section
+      if (targetDate === 'tomorrow') {
+        setForceUpdate(prev => prev + 1);
+      }
+      
       toast.success("Task added successfully! ✅");
       // Force immediate refresh
       await loadUserData();
@@ -54,7 +61,7 @@ const TaskManager = () => {
     }
   };
 
-  const handleEditTask = (taskId: string, currentTitle: string) => {
+  const handleEditTask = async (taskId: string, currentTitle: string) => {
     setEditingTaskId(taskId);
     setEditingTaskTitle(currentTitle);
   };
@@ -83,6 +90,7 @@ const TaskManager = () => {
       await moveTaskToTomorrow(taskId);
       toast.success("Task moved to tomorrow ✅");
       await loadUserData();
+      setForceUpdate(prev => prev + 1); // Force update
     } catch (error) {
       toast.error("Failed to move task");
     } finally {
@@ -96,6 +104,7 @@ const TaskManager = () => {
       await deleteTask(taskId);
       toast.success("Task deleted successfully! 🗑️");
       await loadUserData();
+      setForceUpdate(prev => prev + 1); // Force update
     } catch (error) {
       toast.error("Failed to delete task");
     } finally {
@@ -104,18 +113,18 @@ const TaskManager = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in" key={forceUpdate}>
       <div className="text-center space-y-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Task Manager</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Organize your daily tasks</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground font-poppins">Task Manager</h1>
+        <p className="text-sm sm:text-base text-muted-foreground font-poppins">Organize your daily tasks</p>
       </div>
 
       <Tabs defaultValue="today" className="w-full">
         <TabsList className="grid w-full grid-cols-2 glassmorphism">
-          <TabsTrigger value="today" className="data-[state=active]:glossy-gradient text-sm">
+          <TabsTrigger value="today" className="data-[state=active]:glossy-gradient text-sm font-poppins">
             Today ({todayLog.tasks.filter(t => !t.completed).length})
           </TabsTrigger>
-          <TabsTrigger value="tomorrow" className="data-[state=active]:glossy-gradient text-sm">
+          <TabsTrigger value="tomorrow" className="data-[state=active]:glossy-gradient text-sm font-poppins">
             Tomorrow ({tomorrowLog.tasks.filter(t => !t.completed).length})
           </TabsTrigger>
         </TabsList>
@@ -124,8 +133,8 @@ const TaskManager = () => {
           <Card className="p-4 sm:p-6 glow-card hover-lift">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <h3 className="text-base sm:text-lg font-semibold text-foreground">Today's Tasks</h3>
-                <Badge variant="secondary" className="glossy-gradient self-start sm:self-auto">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground font-poppins">Today's Tasks</h3>
+                <Badge variant="secondary" className="glossy-gradient self-start sm:self-auto font-poppins">
                   {todayLog.tasks.filter(t => t.completed).length} / {todayLog.tasks.length} completed
                 </Badge>
               </div>
@@ -160,8 +169,8 @@ const TaskManager = () => {
           <Card className="p-4 sm:p-6 glow-card hover-lift">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                <h3 className="text-base sm:text-lg font-semibold text-foreground">Tomorrow's Tasks</h3>
-                <Badge variant="secondary" className="glossy-gradient self-start sm:self-auto">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground font-poppins">Tomorrow's Tasks</h3>
+                <Badge variant="secondary" className="glossy-gradient self-start sm:self-auto font-poppins">
                   {tomorrowLog.tasks.filter(t => t.completed).length} / {tomorrowLog.tasks.length} completed
                 </Badge>
               </div>

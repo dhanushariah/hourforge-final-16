@@ -20,15 +20,15 @@ const Index = () => {
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-3">
             <img 
-              src="/lovable-uploads/c7dec565-583e-4c78-a5c4-7fcad5b813cc.png" 
+              src="/lovable-uploads/1aff2475-2ece-414b-ad8c-e62f839d0063.png" 
               alt="HourForge Logo" 
               className="w-12 h-12 object-contain animate-pulse"
             />
-            <h1 className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold gradient-bg bg-clip-text text-transparent font-poppins">
               HourForge
             </h1>
           </div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground font-poppins">Loading...</p>
         </div>
       </div>
     );

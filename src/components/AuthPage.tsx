@@ -84,15 +84,15 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
         <div className="text-center space-y-2 mb-6">
           <div className="flex items-center justify-center space-x-3 mb-2">
             <img 
-              src="/lovable-uploads/c7dec565-583e-4c78-a5c4-7fcad5b813cc.png" 
+              src="/lovable-uploads/1aff2475-2ece-414b-ad8c-e62f839d0063.png" 
               alt="HourForge Logo" 
               className="w-12 h-12 object-contain"
             />
-            <h1 className="text-3xl font-bold gradient-text">
+            <h1 className="text-3xl font-bold gradient-text font-poppins">
               HourForge
             </h1>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground font-poppins">
             {isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>
         </div>
@@ -100,7 +100,7 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
         <form onSubmit={handleAuth} className="space-y-4">
           {isSignUp && (
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName" className="font-poppins">Full Name</Label>
               <Input
                 id="fullName"
                 type="text"
@@ -108,13 +108,13 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="bg-background/50 border-border/50"
+                className="bg-background/50 border-border/50 font-poppins"
               />
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="font-poppins">Email</Label>
             <Input
               id="email"
               type="email"
@@ -122,12 +122,12 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-background/50 border-border/50"
+              className="bg-background/50 border-border/50 font-poppins"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="font-poppins">Password</Label>
             <Input
               id="password"
               type="password"
@@ -136,13 +136,13 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="bg-background/50 border-border/50"
+              className="bg-background/50 border-border/50 font-poppins"
             />
           </div>
 
           <Button 
             type="submit" 
-            className="w-full glossy-gradient text-white font-medium shadow-lg"
+            className="w-full glossy-gradient text-white font-medium shadow-lg font-poppins"
             disabled={loading}
           >
             {loading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
@@ -153,7 +153,7 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
           <button
             type="button"
             onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors font-poppins"
           >
             {isSignUp 
               ? 'Already have an account? Sign in' 
