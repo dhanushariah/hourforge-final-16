@@ -372,29 +372,28 @@ export const useSupabaseStore = () => {
   };
 
   const getYearlyProgress = () => {
-    const currentYear = new Date().getFullYear();
-    const currentYearLogs = dailyLogs.filter(log => 
-      log.date.startsWith(currentYear.toString())
-    );
-    
-    const completed = currentYearLogs.reduce((sum, log) => sum + log.hours, 0);
-    
-    // Calculate how many hours should be "used" based on current date
     const now = new Date();
-    const yearStart = new Date(now.getFullYear(), 0, 1);
-    const daysPassed = Math.ceil((now.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
-    const expectedHours = daysPassed * 12; // 12 hours per day
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const daysPassed = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     
-    const remaining = Math.max(0, YEARLY_GOAL - completed);
-    const percentage = Math.min(100, (completed / YEARLY_GOAL) * 100);
-    
+    const totalHoursInYear = dailyLogs.reduce((sum, log) => sum + log.hours, 0);
+    const yearlyGoal = 4380; // 12 hours * 365 days
+    const expectedHours = daysPassed * 12; // 12 hours per day expected
+    const expectedPercentage = (expectedHours / yearlyGoal) * 100;
+    const actualPercentage = (totalHoursInYear / yearlyGoal) * 100;
+    const hoursBehindOrAhead = totalHoursInYear - expectedHours;
+    const isAhead = hoursBehindOrAhead >= 0;
+
     return {
-      completed,
-      remaining,
-      percentage,
-      goal: YEARLY_GOAL,
+      completed: totalHoursInYear,
+      remaining: yearlyGoal - totalHoursInYear,
+      percentage: actualPercentage,
+      goal: yearlyGoal,
       expectedHours,
-      daysPassed
+      daysPassed,
+      expectedPercentage,
+      hoursBehindOrAhead: Math.abs(hoursBehindOrAhead),
+      isAhead
     };
   };
 
