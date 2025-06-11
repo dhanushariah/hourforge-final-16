@@ -100,7 +100,7 @@ const TaskManager = () => {
       {/* Task Stats */}
       <Card className="p-6 glassmorphism border-primary/20">
         <div className="text-center space-y-4">
-          <div className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">
+          <div className="text-3xl font-bold text-foreground">
             {completedTasks}/{totalTasks}
           </div>
           <div className="text-sm text-muted-foreground">Tasks Completed Today</div>

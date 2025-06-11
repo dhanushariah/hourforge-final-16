@@ -51,14 +51,14 @@ const YearlyGoals = () => {
   return (
     <div className="space-y-6 p-4">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">Yearly Goals</h1>
+        <h1 className="text-2xl font-bold text-foreground">Yearly Goals</h1>
         <p className="text-muted-foreground">Track your long-term objectives</p>
       </div>
 
       {/* Add New Goal */}
       <Card className="p-6 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
         <form onSubmit={handleAddGoal} className="space-y-4">
-          <h3 className="text-lg font-semibold">Add New Goal</h3>
+          <h3 className="text-lg font-semibold text-foreground">Add New Goal</h3>
           
           <div className="space-y-4">
             <Input
@@ -88,7 +88,7 @@ const YearlyGoals = () => {
           
           <Button 
             type="submit" 
-            className="w-full gradient-bg" 
+            className="w-full gradient-bg text-primary-foreground" 
             disabled={!goalTitle.trim() || !estimatedHours}
           >
             Add Goal
@@ -115,7 +115,7 @@ const YearlyGoals = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold">{goal.title}</h3>
+                      <h3 className="text-lg font-semibold text-foreground">{goal.title}</h3>
                       {goal.description && (
                         <p className="text-sm text-muted-foreground mt-1">
                           {goal.description}
@@ -124,7 +124,7 @@ const YearlyGoals = () => {
                     </div>
                     
                     <div className="text-right ml-4">
-                      <div className="text-2xl font-bold gradient-bg bg-clip-text text-transparent">
+                      <div className="text-2xl font-bold text-primary">
                         {progress.toFixed(0)}%
                       </div>
                       <div className="text-xs text-muted-foreground">Complete</div>
@@ -194,7 +194,7 @@ const YearlyGoals = () => {
                     </div>
                     
                     <div className="text-center">
-                      <div className="text-lg font-bold">
+                      <div className="text-lg font-bold text-foreground">
                         {goal.estimated_hours}
                       </div>
                       <div className="text-xs text-muted-foreground">Target</div>
