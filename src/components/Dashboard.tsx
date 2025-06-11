@@ -65,7 +65,7 @@ const Dashboard = () => {
       </div>
 
       {/* Yearly Progress */}
-      <Card className="p-4 sm:p-6 glassmorphism border-primary/20 hover-lift soft-gradient">
+      <Card className="p-4 sm:p-6 glow-card hover-lift soft-gradient">
         <div className="space-y-4">
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">Yearly Progress</h2>
           <div className="space-y-2">
@@ -75,7 +75,7 @@ const Dashboard = () => {
             </div>
             <Progress 
               value={yearlyProgress.percentage} 
-              className="h-3" 
+              className="h-3 enhanced-progress" 
             />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{yearlyProgress.percentage.toFixed(1)}% Complete</span>
@@ -104,7 +104,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="text-center p-3 rounded-2xl bg-secondary/50">
+          <div className="text-center p-3 rounded-2xl bg-secondary/50 glassmorphism">
             <div className="text-sm text-foreground">
               Day {yearlyProgress.daysPassed} of 365 • {yearlyProgress.daysRemaining} days remaining
             </div>
@@ -116,7 +116,7 @@ const Dashboard = () => {
       </Card>
 
       {/* Daily Progress */}
-      <Card className="p-4 sm:p-6 glassmorphism border-primary/20 hover-lift soft-gradient">
+      <Card className="p-4 sm:p-6 glow-card hover-lift soft-gradient">
         <div className="space-y-4">
           <h2 className="text-lg sm:text-xl font-semibold text-foreground">Today's Progress</h2>
           <div className="space-y-2">
@@ -124,7 +124,7 @@ const Dashboard = () => {
               <span>Daily Hours</span>
               <span className="font-medium">{todayLog.hours.toFixed(1)} / 12</span>
             </div>
-            <Progress value={Math.min(100, dailyProgress)} className="h-3" />
+            <Progress value={Math.min(100, dailyProgress)} className="h-3 enhanced-progress" />
             <div className="text-xs text-muted-foreground text-center">
               {dailyProgress >= 100 ? "Daily goal achieved! 🎉" : `${(12 - todayLog.hours).toFixed(1)} hours to go`}
             </div>
@@ -149,7 +149,7 @@ const Dashboard = () => {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-primary/20 to-accent/20 border-primary/20 hover-lift button-press">
+        <Card className="p-4 glow-card hover-lift button-press soft-gradient">
           <div className="text-center">
             <div className="text-lg font-bold text-foreground">
               {todayLog.tasks.filter(t => t.completed).length}
@@ -158,7 +158,7 @@ const Dashboard = () => {
           </div>
         </Card>
         
-        <Card className="p-4 bg-gradient-to-br from-success/20 to-primary/20 border-success/20 hover-lift button-press">
+        <Card className="p-4 glow-card hover-lift button-press soft-gradient">
           <div className="text-center">
             <div className="text-lg font-bold text-foreground">
               {Math.floor(yearlyProgress.percentage)}%

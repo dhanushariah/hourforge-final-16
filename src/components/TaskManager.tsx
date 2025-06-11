@@ -110,7 +110,7 @@ const TaskManager = () => {
         </TabsList>
 
         <TabsContent value="today" className="space-y-4">
-          <Card className="p-4 sm:p-6 glassmorphism border-primary/20">
+          <Card className="p-4 sm:p-6 glow-card hover-lift">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <h3 className="text-base sm:text-lg font-semibold text-foreground">Today's Tasks</h3>
@@ -145,7 +145,7 @@ const TaskManager = () => {
         </TabsContent>
 
         <TabsContent value="tomorrow" className="space-y-4">
-          <Card className="p-4 sm:p-6 glassmorphism border-accent/20">
+          <Card className="p-4 sm:p-6 glow-card hover-lift">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <h3 className="text-base sm:text-lg font-semibold text-foreground">Tomorrow's Tasks</h3>

@@ -59,7 +59,7 @@ const ProductivityTimer = () => {
       </div>
 
       {/* Timer Display */}
-      <Card className="p-4 sm:p-8 glassmorphism border-primary/20 hover-lift">
+      <Card className="p-4 sm:p-8 glow-card hover-lift">
         <div className="text-center space-y-4 sm:space-y-6">
           <div className="space-y-2">
             <div className="text-4xl sm:text-6xl font-bold gradient-text font-mono tracking-wider break-all">
@@ -132,19 +132,19 @@ const ProductivityTimer = () => {
       </Card>
 
       {/* Session Info */}
-      <Card className="p-4 sm:p-6 glassmorphism border-border/50">
+      <Card className="p-4 sm:p-6 glow-card">
         <div className="space-y-4">
           <h3 className="text-base sm:text-lg font-semibold text-foreground">Session Info</h3>
           
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <div className="text-center p-3 rounded-2xl bg-secondary/50">
+            <div className="text-center p-3 rounded-2xl glassmorphism">
               <div className="text-xl sm:text-2xl font-bold text-primary">
                 12h
               </div>
               <div className="text-xs text-muted-foreground">Daily Goal</div>
             </div>
             
-            <div className="text-center p-3 rounded-2xl bg-secondary/50">
+            <div className="text-center p-3 rounded-2xl glassmorphism">
               <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {hours.toFixed(1)}h
               </div>

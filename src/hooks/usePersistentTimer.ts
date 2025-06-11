@@ -1,252 +1,140 @@
 
-import { useEffect, useRef, useCallback } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect, useCallback } from 'react';
 import { useTimerState } from './timer/useTimerState';
 import { useTimerCalculations } from './timer/useTimerCalculations';
 import { useTimerDatabase } from './timer/useTimerDatabase';
-import { useAuth } from '@/hooks/useAuth';
+import { useTimerNotifications } from './timer/useTimerNotifications';
 
 export const usePersistentTimer = () => {
-  const { user } = useAuth();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const storageRef = useRef<any>(null);
-
   const {
-    elapsedSeconds,
-    setElapsedSeconds,
     state,
     setState,
+    startTime,
+    setStartTime,
+    pausedDuration,
+    setPausedDuration,
     sessionId,
     setSessionId,
-    saveTimerState,
-    loadTimerState,
-    clearTimerState,
-    formattedTime,
   } = useTimerState();
 
-  const { calculateElapsedSeconds, getCurrentDateIST, getCurrentTimeIST } = useTimerCalculations();
+  const { formatTime, calculateElapsedSeconds, calculateHours } = useTimerCalculations();
   const { createTimerSession, updateTimerSession, updateDailyLog } = useTimerDatabase();
+  const { showNotification } = useTimerNotifications();
 
-  // Update timer display
-  const updateTimerDisplay = useCallback(() => {
-    if (storageRef.current && state !== 'idle') {
-      const elapsed = calculateElapsedSeconds(storageRef.current);
-      setElapsedSeconds(elapsed);
-    }
-  }, [state, calculateElapsedSeconds, setElapsedSeconds]);
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Start the real-time update interval
-  const startInterval = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    
-    intervalRef.current = setInterval(() => {
-      updateTimerDisplay();
-    }, 100);
-  }, [updateTimerDisplay]);
+  // Update current time every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
 
-  // Stop the interval
-  const stopInterval = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    return () => clearInterval(interval);
   }, []);
 
-  // Restore timer on mount
-  useEffect(() => {
-    if (!user) return;
+  const elapsedSeconds = calculateElapsedSeconds(startTime, currentTime, pausedDuration, state);
+  const hours = calculateHours(elapsedSeconds);
+  const formattedTime = formatTime(elapsedSeconds);
 
-    const stored = loadTimerState();
-    const today = getCurrentDateIST();
-
-    if (stored && stored.date === today && stored.state !== 'idle') {
-      console.log('Restoring timer session:', stored);
-      
-      storageRef.current = stored;
-      setSessionId(stored.sessionId);
-      setState(stored.state);
-      
-      const elapsed = calculateElapsedSeconds(stored);
-      setElapsedSeconds(elapsed);
-      
-      if (stored.state === 'running') {
-        startInterval();
-      }
-      
-      toast.success('Timer session restored!');
-    } else if (stored && stored.date !== today) {
-      clearTimerState();
-    }
-  }, [user, loadTimerState, clearTimerState, startInterval, calculateElapsedSeconds, getCurrentDateIST, setSessionId, setState, setElapsedSeconds]);
-
-  // Start timer
   const start = useCallback(async () => {
-    if (!user) {
-      toast.error('Please sign in to use the timer');
-      return;
-    }
-
-    if (state !== 'idle') {
-      toast.error('Timer is already running or paused');
-      return;
-    }
-
     try {
-      const startTime = getCurrentTimeIST();
-      const today = getCurrentDateIST();
+      const now = new Date().toISOString();
+      const today = new Date().toISOString().split('T')[0];
       
-      const data = await createTimerSession(startTime, today);
-
-      const now = Date.now();
-      const timerData = {
-        sessionId: data.id,
-        realStartTime: now,
-        totalPausedDuration: 0,
-        state: 'running' as const,
-        date: today,
-      };
-
-      setSessionId(data.id);
+      const session = await createTimerSession(now, today);
+      
+      setStartTime(Date.now());
+      setPausedDuration(0);
+      setSessionId(session.id);
       setState('running');
-      setElapsedSeconds(0);
-      saveTimerState(timerData);
-      storageRef.current = timerData;
       
-      startInterval();
-      toast.success('Timer started! 🚀');
-    } catch (error: any) {
-      console.error('Error starting timer:', error);
-      toast.error('Failed to start timer. Please try again.');
+      showNotification('start', 'Timer started! Focus time begins now 🚀');
+    } catch (error) {
+      console.error('Failed to start timer:', error);
+      showNotification('start', 'Failed to start timer. Please try again.');
     }
-  }, [user, state, getCurrentTimeIST, getCurrentDateIST, createTimerSession, setSessionId, setState, setElapsedSeconds, saveTimerState, startInterval]);
+  }, [createTimerSession, setStartTime, setPausedDuration, setSessionId, setState, showNotification]);
 
-  // Pause timer
   const pause = useCallback(() => {
-    if (state !== 'running' || !storageRef.current) return;
-
-    stopInterval();
-    
-    const now = Date.now();
-    const updatedData = {
-      ...storageRef.current,
-      state: 'paused' as const,
-      lastPauseTime: now,
-    };
-    
-    saveTimerState(updatedData);
-    storageRef.current = updatedData;
-    setState('paused');
-    toast.info('Timer paused ⏸️');
-  }, [state, saveTimerState, stopInterval, setState]);
-
-  // Resume timer
-  const resume = useCallback(() => {
-    if (state !== 'paused' || !storageRef.current) return;
-
-    const now = Date.now();
-    const pauseDuration = storageRef.current.lastPauseTime ? 
-      now - storageRef.current.lastPauseTime : 0;
-    
-    const updatedData = {
-      ...storageRef.current,
-      state: 'running' as const,
-      totalPausedDuration: storageRef.current.totalPausedDuration + pauseDuration,
-      lastPauseTime: undefined,
-    };
-    
-    saveTimerState(updatedData);
-    storageRef.current = updatedData;
-    setState('running');
-    startInterval();
-    toast.success('Timer resumed! ▶️');
-  }, [state, saveTimerState, startInterval, setState]);
-
-  // End timer and save session
-  const end = useCallback(async () => {
-    if (!user || !sessionId || !storageRef.current) {
-      toast.error('No active session to save');
-      return;
+    if (state === 'running') {
+      setState('paused');
+      showNotification('pause', 'Timer paused. Take a well-deserved break! ☕');
     }
+  }, [state, setState, showNotification]);
 
-    stopInterval();
+  const resume = useCallback(() => {
+    if (state === 'paused') {
+      setState('running');
+      showNotification('resume', 'Timer resumed! Back to productive work 💪');
+    }
+  }, [state, setState, showNotification]);
+
+  const end = useCallback(async () => {
+    if (!sessionId || (state !== 'running' && state !== 'paused')) return;
 
     try {
-      const finalSeconds = calculateElapsedSeconds(storageRef.current);
-      const hours = finalSeconds / 3600;
+      const endTime = new Date().toISOString();
+      const totalElapsed = calculateElapsedSeconds(startTime, Date.now(), pausedDuration, 'idle');
       
-      if (finalSeconds < 60) {
-        toast.error('Session too short (less than 1 minute). Not saved.');
-        setElapsedSeconds(0);
-        setState('idle');
-        setSessionId(null);
-        clearTimerState();
-        storageRef.current = null;
-        return;
+      await updateTimerSession(sessionId, endTime, totalElapsed);
+      
+      const sessionHours = calculateHours(totalElapsed);
+      if (sessionHours > 0) {
+        const today = new Date().toISOString().split('T')[0];
+        const newTotal = await updateDailyLog(today, sessionHours);
+        
+        showNotification('end', `Session completed! Added ${sessionHours.toFixed(2)}h to your daily log 🎉`);
+        
+        // Dispatch custom event for components to refresh
+        window.dispatchEvent(new CustomEvent('timer-saved'));
       }
-
-      const endTime = getCurrentTimeIST();
-      const today = getCurrentDateIST();
       
-      await updateTimerSession(sessionId, endTime, finalSeconds);
-      const newTotal = await updateDailyLog(today, hours);
-
-      const roundedHours = Math.round(hours * 100) / 100;
-      toast.success(`Session saved successfully! ✅\nAdded ${roundedHours.toFixed(2)} hours to your daily log.\nTotal today: ${newTotal.toFixed(2)}h`);
-
-      setElapsedSeconds(0);
+      // Reset timer state
       setState('idle');
+      setStartTime(0);
+      setPausedDuration(0);
       setSessionId(null);
-      clearTimerState();
-      storageRef.current = null;
-
-      window.dispatchEvent(new CustomEvent('timer-saved'));
+      
     } catch (error: any) {
-      console.error('Critical error during timer save:', error);
-      toast.error(`Failed to save session: ${error.message}. Please contact support if this persists.`);
+      console.error('Failed to end timer:', error);
+      showNotification('end', error.message || 'Failed to save session. Please try again.');
     }
-  }, [user, sessionId, stopInterval, calculateElapsedSeconds, getCurrentTimeIST, getCurrentDateIST, updateTimerSession, updateDailyLog, setElapsedSeconds, setState, setSessionId, clearTimerState]);
+  }, [
+    sessionId,
+    state,
+    startTime,
+    pausedDuration,
+    calculateElapsedSeconds,
+    calculateHours,
+    updateTimerSession,
+    updateDailyLog,
+    setState,
+    setStartTime,
+    setPausedDuration,
+    setSessionId,
+    showNotification
+  ]);
 
-  // Reset timer
   const reset = useCallback(() => {
-    stopInterval();
-    setElapsedSeconds(0);
     setState('idle');
+    setStartTime(0);
+    setPausedDuration(0);
     setSessionId(null);
-    clearTimerState();
-    storageRef.current = null;
-    toast.info('Timer reset 🔄');
-  }, [stopInterval, setElapsedSeconds, setState, setSessionId, clearTimerState]);
+    showNotification('reset', 'Timer reset. Ready for your next session! 🔄');
+  }, [setState, setStartTime, setPausedDuration, setSessionId, showNotification]);
 
-  // Toggle between start/pause/resume
   const toggle = useCallback(() => {
-    if (state === 'idle') {
-      start();
-    } else if (state === 'running') {
+    if (state === 'running') {
       pause();
     } else if (state === 'paused') {
       resume();
     }
-  }, [state, start, pause, resume]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
+  }, [state, pause, resume]);
 
   return {
-    seconds: elapsedSeconds,
-    hours: elapsedSeconds / 3600,
-    formattedTime: formattedTime(),
+    formattedTime,
     state,
-    isRunning: state === 'running',
-    isPaused: state === 'paused',
-    isIdle: state === 'idle',
+    hours,
     start,
     pause,
     resume,

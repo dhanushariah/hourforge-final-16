@@ -47,14 +47,14 @@ const Profile = () => {
   ];
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6 p-4 animate-fade-in">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold text-foreground">Profile</h1>
         <p className="text-muted-foreground">Manage your account and preferences</p>
       </div>
 
       {/* User Info */}
-      <Card className="p-6 glassmorphism border-primary/20">
+      <Card className="p-6 glow-card hover-lift">
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
             <User size={32} className="text-primary-foreground" />
@@ -73,12 +73,12 @@ const Profile = () => {
       </Card>
 
       {/* Analytics */}
-      <Card className="p-6 glassmorphism border-border/50">
+      <Card className="p-6 glow-card hover-lift">
         <h3 className="text-lg font-semibold text-foreground mb-4">Personal Analytics</h3>
         
         <div className="grid grid-cols-1 gap-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="flex items-center space-x-4 p-4 bg-secondary/50 rounded-2xl">
+            <div key={stat.label} className="flex items-center space-x-4 p-4 glassmorphism rounded-2xl hover-lift">
               <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
                 <stat.icon size={20} className="text-primary" />
               </div>
@@ -110,12 +110,12 @@ const Profile = () => {
       </Card>
 
       {/* Settings */}
-      <Card className="p-6 glassmorphism border-border/50">
+      <Card className="p-6 glow-card hover-lift">
         <h3 className="text-lg font-semibold text-foreground mb-4">Settings</h3>
         
         <div className="space-y-4">
           {/* Theme Toggle */}
-          <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-2xl">
+          <div className="flex items-center justify-between p-4 glassmorphism rounded-2xl">
             <div className="flex items-center space-x-3">
               {isDarkMode ? (
                 <Moon size={20} className="text-foreground" />
@@ -142,7 +142,7 @@ const Profile = () => {
       </Card>
 
       {/* Sign Out */}
-      <Card className="p-6 glassmorphism border-destructive/20">
+      <Card className="p-6 glow-card hover-lift border-destructive/20">
         <div className="text-center space-y-4">
           <h3 className="text-lg font-semibold text-foreground">Account Actions</h3>
           
@@ -150,7 +150,7 @@ const Profile = () => {
             onClick={signOut}
             variant="destructive"
             size="lg"
-            className="w-full flex items-center gap-2"
+            className="w-full flex items-center gap-2 glossy-gradient"
           >
             <LogOut size={20} />
             Sign Out
