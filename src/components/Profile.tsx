@@ -96,7 +96,7 @@ const Profile = () => {
         {/* Year Progress Summary */}
         <div className="mt-6 pt-4 border-t border-border/50">
           <div className="text-center space-y-2">
-            <div className="text-2xl font-bold gradient-bg bg-clip-text text-transparent">
+            <div className="text-2xl font-bold gradient-text">
               {yearlyProgress.percentage.toFixed(1)}%
             </div>
             <div className="text-sm text-muted-foreground">

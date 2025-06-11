@@ -17,7 +17,7 @@ const Dashboard = () => {
     <div className="space-y-6 p-4 animate-fade-in">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold gradient-text">
           HourForge
         </h1>
         <p className="text-muted-foreground">Track your productive hours</p>
@@ -32,7 +32,6 @@ const Dashboard = () => {
               <span>Hours Completed</span>
               <span className="font-medium">{yearlyProgress.completed.toFixed(1)}</span>
             </div>
-            {/* Fixed Progress Bar - ensure value is properly passed */}
             <Progress 
               value={yearlyProgress.percentage} 
               className="h-3" 

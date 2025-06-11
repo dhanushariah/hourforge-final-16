@@ -37,7 +37,7 @@ const DailyLog = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="text-center space-y-2">
             <h3 className="text-lg font-semibold text-foreground">Today's Hours</h3>
-            <div className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">
+            <div className="text-3xl font-bold gradient-text">
               {todayLog.hours.toFixed(1)}
             </div>
           </div>
