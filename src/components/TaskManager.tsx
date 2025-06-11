@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +21,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const TaskManager = () => {
-  const { getTodayLog, addTask, updateTask, toggleTask, moveTaskToTomorrow, deleteTask, loadUserData } = useSupabaseStore();
+  const { getTodayLog, addTask, updateTask, toggleTask, moveTaskToTomorrow, deleteTask, loadUserData, dailyLogs } = useSupabaseStore();
   const [newTask, setNewTask] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
   
   const todayLog = getTodayLog();
   
@@ -37,12 +39,19 @@ const TaskManager = () => {
     return () => window.removeEventListener('timer-saved', handleTimerSaved);
   }, [loadUserData]);
   
-  // Get tomorrow's tasks
+  // Auto-focus edit input when editing starts
+  useEffect(() => {
+    if (editingTaskId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingTaskId]);
+  
+  // Get tomorrow's tasks from dailyLogs
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDate = tomorrow.toISOString().split('T')[0];
   
-  const { dailyLogs } = useSupabaseStore();
   const tomorrowLog = dailyLogs.find(log => log.date === tomorrowDate) || {
     date: tomorrowDate,
     hours: 0,
@@ -52,9 +61,15 @@ const TaskManager = () => {
   const handleAddTask = async (targetDate?: string) => {
     if (!newTask.trim()) return;
     
-    await addTask(newTask.trim(), undefined, targetDate);
-    setNewTask("");
-    toast.success("Task added successfully! ✅");
+    try {
+      await addTask(newTask.trim(), undefined, targetDate);
+      setNewTask("");
+      toast.success("Task added successfully! ✅");
+      // Force immediate refresh to show the new task
+      await loadUserData();
+    } catch (error) {
+      toast.error("Failed to add task");
+    }
   };
 
   const handleEditTask = (taskId: string, currentTitle: string) => {
@@ -81,13 +96,22 @@ const TaskManager = () => {
   };
 
   const handleMoveToTomorrow = async (taskId: string) => {
-    await moveTaskToTomorrow(taskId);
-    toast.success("Task moved to tomorrow ✅");
+    try {
+      await moveTaskToTomorrow(taskId);
+      toast.success("Task moved to tomorrow ✅");
+      await loadUserData(); // Refresh to show updated task lists
+    } catch (error) {
+      toast.error("Failed to move task");
+    }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId);
-    toast.success("Task deleted successfully! 🗑️");
+    try {
+      await deleteTask(taskId);
+      toast.success("Task deleted successfully! 🗑️");
+    } catch (error) {
+      toast.error("Failed to delete task");
+    }
   };
 
   const TaskItem = ({ task, showMoveButton = true }: { task: any, showMoveButton?: boolean }) => (
@@ -107,18 +131,37 @@ const TaskManager = () => {
         {editingTaskId === task.id ? (
           <div className="flex items-center space-x-2">
             <Input
+              ref={editInputRef}
               value={editingTaskTitle}
               onChange={(e) => setEditingTaskTitle(e.target.value)}
               className="h-8 text-sm"
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveEdit(task.id);
-                if (e.key === 'Escape') handleCancelEdit();
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveEdit(task.id);
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  handleCancelEdit();
+                }
+              }}
+              onBlur={(e) => {
+                // Prevent blur from canceling edit if clicking save button
+                const relatedTarget = e.relatedTarget as HTMLElement;
+                if (relatedTarget?.getAttribute('data-action') !== 'save-edit') {
+                  setTimeout(() => {
+                    if (editingTaskId === task.id) {
+                      handleSaveEdit(task.id);
+                    }
+                  }, 100);
+                }
               }}
             />
             <Button
               size="sm"
               onClick={() => handleSaveEdit(task.id)}
               className="glossy-gradient h-8 w-8 p-0"
+              data-action="save-edit"
             >
               <Check className="w-4 h-4" />
             </Button>
@@ -229,7 +272,7 @@ const TaskManager = () => {
                 />
                 <Button 
                   onClick={() => handleAddTask()} 
-                  className="glossy-gradient px-4 sm:px-6 min-h-[40px] whitespace-nowrap"
+                  className="glossy-gradient px-4 sm:px-6 min-h-[48px] whitespace-nowrap"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add
@@ -271,7 +314,7 @@ const TaskManager = () => {
                 />
                 <Button 
                   onClick={() => handleAddTask('tomorrow')} 
-                  className="glossy-gradient px-4 sm:px-6 min-h-[40px] whitespace-nowrap"
+                  className="glossy-gradient px-4 sm:px-6 min-h-[48px] whitespace-nowrap"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add

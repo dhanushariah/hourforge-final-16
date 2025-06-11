@@ -70,6 +70,8 @@ export const useSupabaseStore = () => {
     
     setLoading(true);
     try {
+      console.log('Loading user data...');
+      
       // Load daily logs
       const { data: logs, error: logsError } = await supabase
         .from('daily_logs')
@@ -77,7 +79,10 @@ export const useSupabaseStore = () => {
         .eq('user_id', user.id)
         .order('date', { ascending: false });
 
-      if (logsError) throw logsError;
+      if (logsError) {
+        console.error('Logs error:', logsError);
+        throw logsError;
+      }
 
       // Load tasks for each day
       const { data: tasks, error: tasksError } = await supabase
@@ -86,7 +91,10 @@ export const useSupabaseStore = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        console.error('Tasks error:', tasksError);
+        throw tasksError;
+      }
 
       // Group tasks by date
       const tasksByDate: Record<string, Task[]> = {};
@@ -118,6 +126,7 @@ export const useSupabaseStore = () => {
       logsWithTasks.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       setDailyLogs(logsWithTasks);
+      console.log('Loaded daily logs:', logsWithTasks.length);
 
       // Load yearly goals
       const { data: goals, error: goalsError } = await supabase
@@ -126,7 +135,11 @@ export const useSupabaseStore = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (goalsError) throw goalsError;
+      if (goalsError) {
+        console.error('Goals error:', goalsError);
+        throw goalsError;
+      }
+      
       setYearlyGoals(goals || []);
 
     } catch (error: any) {
@@ -141,55 +154,6 @@ export const useSupabaseStore = () => {
     }
   };
 
-  const addDailyHours = async (date: string, hours: number, notes?: string) => {
-    if (!user || hours > 12) {
-      toast({
-        title: "Invalid hours",
-        description: "Cannot log more than 12 hours per day",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('daily_logs')
-        .upsert({
-          user_id: user.id,
-          date,
-          hours,
-          notes: notes || null,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update local state
-      setDailyLogs(prev => {
-        const existingIndex = prev.findIndex(log => log.date === date);
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = { ...updated[existingIndex], hours, notes };
-          return updated;
-        } else {
-          return [{ ...data, tasks: [] }, ...prev];
-        }
-      });
-
-      // Reload data to ensure sync
-      await loadUserData();
-
-    } catch (error: any) {
-      console.error('Error saving hours:', error);
-      toast({
-        title: "Error saving hours",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   const addTask = async (title: string, description?: string, targetDate?: string) => {
     if (!user) return;
 
@@ -199,6 +163,8 @@ export const useSupabaseStore = () => {
       today;
 
     try {
+      console.log('Adding task for date:', taskDate);
+      
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -213,8 +179,28 @@ export const useSupabaseStore = () => {
 
       if (error) throw error;
 
-      // Reload data to ensure proper sync
-      await loadUserData();
+      console.log('Task added successfully:', data);
+
+      // Update local state immediately for better UX
+      setDailyLogs(prev => {
+        const existingLogIndex = prev.findIndex(log => log.date === taskDate);
+        if (existingLogIndex >= 0) {
+          const updated = [...prev];
+          updated[existingLogIndex] = {
+            ...updated[existingLogIndex],
+            tasks: [...updated[existingLogIndex].tasks, data]
+          };
+          return updated;
+        } else {
+          // Create new log entry for this date
+          const newLog: DailyLog = {
+            date: taskDate,
+            hours: 0,
+            tasks: [data]
+          };
+          return [newLog, ...prev];
+        }
+      });
 
     } catch (error: any) {
       console.error('Error adding task:', error);
@@ -223,6 +209,7 @@ export const useSupabaseStore = () => {
         description: error.message,
         variant: "destructive",
       });
+      throw error;
     }
   };
 
@@ -311,11 +298,6 @@ export const useSupabaseStore = () => {
       // Reload data to ensure proper sync
       await loadUserData();
 
-      toast({
-        title: "Task moved",
-        description: "Task moved to tomorrow",
-      });
-
     } catch (error: any) {
       console.error('Error moving task:', error);
       toast({
@@ -323,6 +305,7 @@ export const useSupabaseStore = () => {
         description: error.message,
         variant: "destructive",
       });
+      throw error;
     }
   };
 
@@ -480,7 +463,6 @@ export const useSupabaseStore = () => {
     dailyLogs,
     yearlyGoals,
     loading,
-    addDailyHours,
     addTask,
     updateTask,
     deleteTask,
