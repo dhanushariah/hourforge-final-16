@@ -22,19 +22,27 @@ export const useTimerState = () => {
 
   const saveTimerState = useCallback((timerData: TimerStorage) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(timerData));
+    console.log('Timer state saved:', timerData);
   }, []);
 
   const loadTimerState = useCallback((): TimerStorage | null => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
+      if (stored) {
+        const data = JSON.parse(stored);
+        console.log('Timer state loaded:', data);
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to load timer state:', error);
       return null;
     }
   }, []);
 
   const clearTimerState = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    console.log('Timer state cleared');
   }, []);
 
   return {

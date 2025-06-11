@@ -51,7 +51,7 @@ const ProductivityTimer = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in font-poppins">
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Productivity Timer</h1>
@@ -75,13 +75,13 @@ const ProductivityTimer = () => {
             )}
           </div>
 
-          {/* Control Buttons - Mobile Optimized */}
+          {/* Control Buttons - Color Coded */}
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             {state === 'idle' ? (
               <Button
                 onClick={start}
                 size="lg"
-                className="glossy-gradient text-primary-foreground px-6 sm:px-8 py-3 text-base sm:text-lg font-medium min-h-[48px] w-full sm:w-auto"
+                className="bg-green-600 hover:bg-green-700 text-white dark:bg-green-600 dark:hover:bg-green-700 dark:text-white px-6 sm:px-8 py-3 text-base sm:text-lg font-medium min-h-[48px] w-full sm:w-auto transition-all duration-200"
               >
                 <Play className="w-5 h-5 mr-2" />
                 Start Timer
@@ -91,8 +91,11 @@ const ProductivityTimer = () => {
                 <Button
                   onClick={toggle}
                   size="lg"
-                  variant="outline"
-                  className="glossy-gradient border-primary/30 px-4 sm:px-6 py-3 min-h-[48px] flex-1 sm:flex-none"
+                  className={`${
+                    state === 'running' 
+                      ? 'bg-yellow-600 hover:bg-yellow-700 text-white dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:text-white' 
+                      : 'bg-green-600 hover:bg-green-700 text-white dark:bg-green-600 dark:hover:bg-green-700 dark:text-white'
+                  } px-4 sm:px-6 py-3 min-h-[48px] flex-1 sm:flex-none transition-all duration-200`}
                 >
                   {state === 'running' ? (
                     <>
@@ -110,7 +113,7 @@ const ProductivityTimer = () => {
                 <Button
                   onClick={end}
                   size="lg"
-                  className="glossy-gradient bg-success text-success-foreground px-4 sm:px-6 py-3 min-h-[48px] flex-1 sm:flex-none"
+                  className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white px-4 sm:px-6 py-3 min-h-[48px] flex-1 sm:flex-none transition-all duration-200"
                 >
                   <Square className="w-5 h-5 mr-2" />
                   End & Save
@@ -119,8 +122,7 @@ const ProductivityTimer = () => {
                 <Button
                   onClick={reset}
                   size="lg"
-                  variant="outline"
-                  className="glossy-gradient border-destructive/30 text-destructive px-4 sm:px-6 py-3 min-h-[48px] flex-1 sm:flex-none"
+                  className="bg-red-600 hover:bg-red-700 text-white dark:bg-red-600 dark:hover:bg-red-700 dark:text-white px-4 sm:px-6 py-3 min-h-[48px] flex-1 sm:flex-none transition-all duration-200"
                 >
                   <RotateCcw className="w-5 h-5 mr-2" />
                   Reset

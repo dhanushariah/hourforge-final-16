@@ -1,5 +1,5 @@
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -75,7 +75,12 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", sans-serif;
+    font-family: "Poppins", sans-serif !important;
+  }
+  
+  /* Enforce Poppins font globally */
+  h1, h2, h3, h4, h5, h6, p, span, div, button, input, textarea, label, a {
+    font-family: "Poppins", sans-serif !important;
   }
 }
 
@@ -92,6 +97,11 @@
   .glow-card {
     @apply glassmorphism relative overflow-hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      0 4px 24px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .glow-card::before {
@@ -104,6 +114,14 @@
     );
     transition: opacity 0.3s ease;
     filter: blur(1px);
+  }
+
+  .dark .glow-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      0 4px 24px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .dark .glow-card::before {

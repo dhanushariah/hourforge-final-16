@@ -22,6 +22,7 @@ export default {
 			fontFamily: {
 				'poppins': ['Poppins', 'sans-serif'],
 				'default': ['Poppins', 'sans-serif'],
+				'sans': ['Poppins', 'sans-serif'], // Override default sans font
 			},
 			colors: {
 				border: 'hsl(var(--border))',

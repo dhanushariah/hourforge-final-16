@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTimerState } from './timer/useTimerState';
+import { useTimerState, TimerStorage } from './timer/useTimerState';
 import { useTimerCalculations } from './timer/useTimerCalculations';
 import { useTimerDatabase } from './timer/useTimerDatabase';
 import { useTimerNotifications } from './timer/useTimerNotifications';
@@ -15,13 +15,36 @@ export const usePersistentTimer = () => {
     setPausedDuration,
     sessionId,
     setSessionId,
+    saveTimerState,
+    loadTimerState,
+    clearTimerState,
   } = useTimerState();
 
-  const { formatTime, calculateElapsedSeconds, calculateHours } = useTimerCalculations();
+  const { formatTime, calculateElapsedSeconds, calculateHours, getCurrentDateIST } = useTimerCalculations();
   const { createTimerSession, updateTimerSession, updateDailyLog } = useTimerDatabase();
   const { showNotification } = useTimerNotifications();
 
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Load persisted timer state on mount
+  useEffect(() => {
+    const storedState = loadTimerState();
+    if (storedState && storedState.state !== 'idle') {
+      console.log('Restoring timer state:', storedState);
+      
+      // Calculate current paused duration if timer was paused
+      let currentPausedDuration = storedState.totalPausedDuration;
+      if (storedState.state === 'paused' && storedState.lastPauseTime) {
+        const pauseTimeSinceLastPause = Date.now() - storedState.lastPauseTime;
+        currentPausedDuration += pauseTimeSinceLastPause;
+      }
+
+      setStartTime(storedState.realStartTime);
+      setPausedDuration(currentPausedDuration);
+      setSessionId(storedState.sessionId);
+      setState(storedState.state);
+    }
+  }, [loadTimerState, setStartTime, setPausedDuration, setSessionId, setState]);
 
   // Update current time every second
   useEffect(() => {
@@ -32,6 +55,21 @@ export const usePersistentTimer = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Save timer state whenever it changes
+  useEffect(() => {
+    if (sessionId && (state === 'running' || state === 'paused')) {
+      const timerData: TimerStorage = {
+        sessionId,
+        realStartTime: startTime,
+        totalPausedDuration: pausedDuration,
+        state,
+        date: getCurrentDateIST(),
+        lastPauseTime: state === 'paused' ? currentTime : undefined,
+      };
+      saveTimerState(timerData);
+    }
+  }, [state, startTime, pausedDuration, sessionId, currentTime, saveTimerState, getCurrentDateIST]);
+
   const elapsedSeconds = calculateElapsedSeconds(startTime, currentTime, pausedDuration, state);
   const hours = calculateHours(elapsedSeconds);
   const formattedTime = formatTime(elapsedSeconds);
@@ -39,11 +77,12 @@ export const usePersistentTimer = () => {
   const start = useCallback(async () => {
     try {
       const now = new Date().toISOString();
-      const today = new Date().toISOString().split('T')[0];
+      const today = getCurrentDateIST();
       
       const session = await createTimerSession(now, today);
       
-      setStartTime(Date.now());
+      const startTimestamp = Date.now();
+      setStartTime(startTimestamp);
       setPausedDuration(0);
       setSessionId(session.id);
       setState('running');
@@ -53,7 +92,7 @@ export const usePersistentTimer = () => {
       console.error('Failed to start timer:', error);
       showNotification('start', 'Failed to start timer. Please try again.');
     }
-  }, [createTimerSession, setStartTime, setPausedDuration, setSessionId, setState, showNotification]);
+  }, [createTimerSession, setStartTime, setPausedDuration, setSessionId, setState, showNotification, getCurrentDateIST]);
 
   const pause = useCallback(() => {
     if (state === 'running') {
@@ -80,8 +119,8 @@ export const usePersistentTimer = () => {
       
       const sessionHours = calculateHours(totalElapsed);
       if (sessionHours > 0) {
-        const today = new Date().toISOString().split('T')[0];
-        const newTotal = await updateDailyLog(today, sessionHours);
+        const today = getCurrentDateIST();
+        await updateDailyLog(today, sessionHours);
         
         showNotification('end', `Session completed! Added ${sessionHours.toFixed(2)}h to your daily log 🎉`);
         
@@ -94,6 +133,7 @@ export const usePersistentTimer = () => {
       setStartTime(0);
       setPausedDuration(0);
       setSessionId(null);
+      clearTimerState();
       
     } catch (error: any) {
       console.error('Failed to end timer:', error);
@@ -112,7 +152,9 @@ export const usePersistentTimer = () => {
     setStartTime,
     setPausedDuration,
     setSessionId,
-    showNotification
+    clearTimerState,
+    showNotification,
+    getCurrentDateIST
   ]);
 
   const reset = useCallback(() => {
@@ -120,8 +162,9 @@ export const usePersistentTimer = () => {
     setStartTime(0);
     setPausedDuration(0);
     setSessionId(null);
+    clearTimerState();
     showNotification('reset', 'Timer reset. Ready for your next session! 🔄');
-  }, [setState, setStartTime, setPausedDuration, setSessionId, showNotification]);
+  }, [setState, setStartTime, setPausedDuration, setSessionId, clearTimerState, showNotification]);
 
   const toggle = useCallback(() => {
     if (state === 'running') {
