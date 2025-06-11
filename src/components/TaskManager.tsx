@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const TaskManager = () => {
-  const { getTodayLog, addTask, toggleTask, moveTaskToTomorrow, deleteTask, loadUserData } = useSupabaseStore();
+  const { getTodayLog, addTask, updateTask, toggleTask, moveTaskToTomorrow, deleteTask, loadUserData } = useSupabaseStore();
   const [newTask, setNewTask] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
