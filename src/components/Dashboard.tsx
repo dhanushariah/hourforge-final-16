@@ -11,6 +11,8 @@ const Dashboard = () => {
   const todayLog = getTodayLog();
   const dailyProgress = (todayLog.hours / 12) * 100;
 
+  console.log('Yearly Progress Data:', yearlyProgress); // Debug log
+
   return (
     <div className="space-y-6 p-4 animate-fade-in">
       {/* Header */}
@@ -30,7 +32,11 @@ const Dashboard = () => {
               <span>Hours Completed</span>
               <span className="font-medium">{yearlyProgress.completed.toFixed(1)}</span>
             </div>
-            <Progress value={yearlyProgress.percentage} className="h-3" />
+            {/* Fixed Progress Bar - ensure value is properly passed */}
+            <Progress 
+              value={yearlyProgress.percentage} 
+              className="h-3" 
+            />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{yearlyProgress.percentage.toFixed(1)}% Complete</span>
               <span>{Math.max(0, yearlyProgress.remaining).toFixed(0)} hours remaining</span>

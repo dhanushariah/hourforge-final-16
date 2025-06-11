@@ -8,7 +8,7 @@ export type TimerState = 'idle' | 'running' | 'paused';
 
 interface TimerStorage {
   sessionId: string | null;
-  startTime: string | null;
+  startTime: number; // Use number timestamp instead of string
   pausedDuration: number;
   state: TimerState;
   date: string;
@@ -20,6 +20,7 @@ export const usePersistentTimer = () => {
   const [state, setState] = useState<TimerState>('idle');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   const STORAGE_KEY = 'hourforge-timer';
 
@@ -56,6 +57,45 @@ export const usePersistentTimer = () => {
   // Clear timer state
   const clearTimerState = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    startTimeRef.current = null;
+  }, []);
+
+  // Calculate elapsed seconds based on timestamps
+  const calculateElapsedSeconds = useCallback(() => {
+    if (!startTimeRef.current) return 0;
+    const now = Date.now();
+    return Math.floor((now - startTimeRef.current) / 1000);
+  }, []);
+
+  // Update timer display using timestamp calculation
+  const updateTimerDisplay = useCallback(() => {
+    if (state === 'running' && startTimeRef.current) {
+      const elapsed = calculateElapsedSeconds();
+      setSeconds(elapsed);
+    }
+  }, [state, calculateElapsedSeconds]);
+
+  // Start the interval for real-time updates
+  const startInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    intervalRef.current = setInterval(() => {
+      updateTimerDisplay();
+    }, 1000);
+  }, [updateTimerDisplay]);
+
+  // Stop the interval
+  const stopInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
   }, []);
 
   // Restore timer on mount
@@ -66,26 +106,23 @@ export const usePersistentTimer = () => {
     const today = getCurrentDateIST();
 
     if (stored && stored.date === today && stored.state === 'running' && stored.startTime) {
-      const startTime = new Date(stored.startTime);
-      const now = new Date();
-      const elapsedMs = now.getTime() - startTime.getTime() - stored.pausedDuration;
+      // Calculate how long the timer has been running
+      const now = Date.now();
+      const elapsedMs = now - stored.startTime - stored.pausedDuration;
       const elapsedSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
 
+      startTimeRef.current = stored.startTime;
       setSeconds(elapsedSeconds);
       setState('running');
       setSessionId(stored.sessionId);
-
-      // Start interval for real-time updates
-      intervalRef.current = setInterval(() => {
-        setSeconds(prev => prev + 1);
-      }, 1000);
-
+      
+      startInterval();
       toast.success('Timer resumed from where you left off!');
     } else if (stored && stored.date !== today) {
       // Clear old timer data from previous day
       clearTimerState();
     }
-  }, [user, loadTimerState, clearTimerState]);
+  }, [user, loadTimerState, clearTimerState, startInterval]);
 
   // Start timer
   const start = useCallback(async () => {
@@ -114,9 +151,12 @@ export const usePersistentTimer = () => {
 
       if (error) throw error;
 
+      const now = Date.now();
+      startTimeRef.current = now;
+
       const timerData: TimerStorage = {
         sessionId: data.id,
-        startTime,
+        startTime: now,
         pausedDuration: 0,
         state: 'running',
         date: today,
@@ -127,80 +167,76 @@ export const usePersistentTimer = () => {
       setSeconds(0);
       saveTimerState(timerData);
       
-      intervalRef.current = setInterval(() => {
-        setSeconds(prev => prev + 1);
-      }, 1000);
-
+      startInterval();
       toast.success('Timer started!');
     } catch (error: any) {
       console.error('Error starting timer:', error);
       toast.error('Failed to start timer');
     }
-  }, [user, loadTimerState, saveTimerState]);
+  }, [user, loadTimerState, saveTimerState, startInterval]);
 
   // Pause timer
   const pause = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    stopInterval();
     
     const stored = loadTimerState();
-    if (stored) {
+    if (stored && startTimeRef.current) {
+      const elapsedMs = Date.now() - startTimeRef.current;
       const updatedData: TimerStorage = {
         ...stored,
         state: 'paused',
-        pausedDuration: stored.pausedDuration + (seconds * 1000),
+        pausedDuration: stored.pausedDuration + elapsedMs,
       };
       saveTimerState(updatedData);
     }
     
     setState('paused');
     toast.info('Timer paused');
-  }, [seconds, loadTimerState, saveTimerState]);
+  }, [loadTimerState, saveTimerState, stopInterval]);
 
   // Resume timer
   const resume = useCallback(() => {
+    const now = Date.now();
+    startTimeRef.current = now;
+    
     setState('running');
-    intervalRef.current = setInterval(() => {
-      setSeconds(prev => prev + 1);
-    }, 1000);
+    startInterval();
 
     const stored = loadTimerState();
     if (stored) {
       const updatedData: TimerStorage = {
         ...stored,
         state: 'running',
+        startTime: now,
       };
       saveTimerState(updatedData);
     }
 
     toast.success('Timer resumed!');
-  }, [loadTimerState, saveTimerState]);
+  }, [loadTimerState, saveTimerState, startInterval]);
 
   // End timer and save session
   const end = useCallback(async () => {
     if (!user || !sessionId) return;
 
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    stopInterval();
 
     try {
       const endTime = getCurrentTimeIST();
+      const finalSeconds = calculateElapsedSeconds();
+      
       const { error } = await supabase
         .from('timer_sessions')
         .update({
           end_time: endTime,
-          duration_seconds: seconds,
+          duration_seconds: finalSeconds,
         })
         .eq('id', sessionId)
         .eq('user_id', user.id);
 
       if (error) throw error;
 
-      const hours = Math.round((seconds / 3600) * 100) / 100;
+      const hours = Math.round((finalSeconds / 3600) * 100) / 100;
       
       if (hours > 0) {
         const today = getCurrentDateIST();
@@ -229,30 +265,29 @@ export const usePersistentTimer = () => {
         }
       }
 
-      // Reset timer
+      // Reset timer completely
       setSeconds(0);
       setState('idle');
       setSessionId(null);
+      startTimeRef.current = null;
       clearTimerState();
 
     } catch (error: any) {
       console.error('Error ending timer:', error);
       toast.error('Failed to end timer');
     }
-  }, [user, sessionId, seconds, clearTimerState]);
+  }, [user, sessionId, stopInterval, calculateElapsedSeconds, clearTimerState]);
 
   // Reset timer
   const reset = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    stopInterval();
     setSeconds(0);
     setState('idle');
     setSessionId(null);
+    startTimeRef.current = null;
     clearTimerState();
     toast.info('Timer reset');
-  }, [clearTimerState]);
+  }, [stopInterval, clearTimerState]);
 
   // Toggle between start/pause
   const toggle = useCallback(() => {

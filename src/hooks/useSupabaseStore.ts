@@ -379,15 +379,15 @@ export const useSupabaseStore = () => {
     const totalHoursInYear = dailyLogs.reduce((sum, log) => sum + log.hours, 0);
     const yearlyGoal = 4380; // 12 hours * 365 days
     const expectedHours = daysPassed * 12; // 12 hours per day expected
-    const expectedPercentage = (expectedHours / yearlyGoal) * 100;
-    const actualPercentage = (totalHoursInYear / yearlyGoal) * 100;
+    const expectedPercentage = Math.min(100, (expectedHours / yearlyGoal) * 100);
+    const actualPercentage = Math.min(100, (totalHoursInYear / yearlyGoal) * 100);
     const hoursBehindOrAhead = totalHoursInYear - expectedHours;
     const isAhead = hoursBehindOrAhead >= 0;
 
     return {
       completed: totalHoursInYear,
-      remaining: yearlyGoal - totalHoursInYear,
-      percentage: actualPercentage,
+      remaining: Math.max(0, yearlyGoal - totalHoursInYear),
+      percentage: actualPercentage, // This is the key fix - ensure it's calculated correctly
       goal: yearlyGoal,
       expectedHours,
       daysPassed,
