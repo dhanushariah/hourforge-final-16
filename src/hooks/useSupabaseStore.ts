@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useSupabaseAuth } from './store/useSupabaseAuth';
+import { useSupabaseData } from './store/useSupabaseData';
+import { useSupabaseCalculations } from './store/useSupabaseCalculations';
 
 export interface DailyLog {
   id?: string;
@@ -38,22 +40,12 @@ export interface TimerSession {
   date: string;
 }
 
-const YEARLY_GOAL = 4380; // 12 hours * 365 days
+const YEARLY_GOAL = 4380;
 
 export const useSupabaseStore = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
-  const [yearlyGoals, setYearlyGoals] = useState<YearlyGoal[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // Get current date in IST
-  const getCurrentDateIST = () => {
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-    const istTime = new Date(now.getTime() + istOffset);
-    return istTime.toISOString().split('T')[0];
-  };
+  const { user, toast, loading, setLoading } = useSupabaseAuth();
+  const { dailyLogs, setDailyLogs, yearlyGoals, setYearlyGoals } = useSupabaseData();
+  const { getCurrentDateIST, getYearlyProgress, getDailyTarget } = useSupabaseCalculations();
 
   // Load data when user is authenticated
   useEffect(() => {
@@ -70,8 +62,6 @@ export const useSupabaseStore = () => {
     
     setLoading(true);
     try {
-      console.log('Loading user data...');
-      
       // Load daily logs
       const { data: logs, error: logsError } = await supabase
         .from('daily_logs')
@@ -79,10 +69,7 @@ export const useSupabaseStore = () => {
         .eq('user_id', user.id)
         .order('date', { ascending: false });
 
-      if (logsError) {
-        console.error('Logs error:', logsError);
-        throw logsError;
-      }
+      if (logsError) throw logsError;
 
       // Load tasks for each day
       const { data: tasks, error: tasksError } = await supabase
@@ -91,10 +78,7 @@ export const useSupabaseStore = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (tasksError) {
-        console.error('Tasks error:', tasksError);
-        throw tasksError;
-      }
+      if (tasksError) throw tasksError;
 
       // Group tasks by date
       const tasksByDate: Record<string, Task[]> = {};
@@ -124,9 +108,7 @@ export const useSupabaseStore = () => {
 
       // Sort by date descending
       logsWithTasks.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
       setDailyLogs(logsWithTasks);
-      console.log('Loaded daily logs:', logsWithTasks.length);
 
       // Load yearly goals
       const { data: goals, error: goalsError } = await supabase
@@ -135,11 +117,7 @@ export const useSupabaseStore = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (goalsError) {
-        console.error('Goals error:', goalsError);
-        throw goalsError;
-      }
-      
+      if (goalsError) throw goalsError;
       setYearlyGoals(goals || []);
 
     } catch (error: any) {
@@ -163,8 +141,6 @@ export const useSupabaseStore = () => {
       today;
 
     try {
-      console.log('Adding task for date:', taskDate);
-      
       const { data, error } = await supabase
         .from('tasks')
         .insert({
@@ -179,9 +155,7 @@ export const useSupabaseStore = () => {
 
       if (error) throw error;
 
-      console.log('Task added successfully:', data);
-
-      // Update local state immediately for better UX
+      // Update local state immediately
       setDailyLogs(prev => {
         const existingLogIndex = prev.findIndex(log => log.date === taskDate);
         if (existingLogIndex >= 0) {
@@ -192,7 +166,6 @@ export const useSupabaseStore = () => {
           };
           return updated;
         } else {
-          // Create new log entry for this date
           const newLog: DailyLog = {
             date: taskDate,
             hours: 0,
@@ -294,8 +267,6 @@ export const useSupabaseStore = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
-
-      // Reload data to ensure proper sync
       await loadUserData();
 
     } catch (error: any) {
@@ -313,7 +284,6 @@ export const useSupabaseStore = () => {
     if (!user) return;
 
     try {
-      // Find the task first
       const task = dailyLogs
         .flatMap(log => log.tasks)
         .find(t => t.id === taskId);
@@ -367,7 +337,6 @@ export const useSupabaseStore = () => {
         .single();
 
       if (error) throw error;
-
       setYearlyGoals(prev => [data, ...prev]);
 
     } catch (error: any) {
@@ -417,48 +386,6 @@ export const useSupabaseStore = () => {
     };
   };
 
-  const getYearlyProgress = () => {
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const daysPassed = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    
-    const totalHoursInYear = dailyLogs.reduce((sum, log) => sum + log.hours, 0);
-    const yearlyGoal = 4380; // 12 hours * 365 days
-    const expectedHours = daysPassed * 12; // 12 hours per day expected
-    const expectedPercentage = Math.min(100, (expectedHours / yearlyGoal) * 100);
-    const actualPercentage = Math.min(100, (totalHoursInYear / yearlyGoal) * 100);
-    const hoursBehindOrAhead = totalHoursInYear - expectedHours;
-    const isAhead = hoursBehindOrAhead >= 0;
-
-    return {
-      completed: totalHoursInYear,
-      remaining: Math.max(0, yearlyGoal - totalHoursInYear),
-      percentage: actualPercentage,
-      goal: yearlyGoal,
-      expectedHours,
-      daysPassed,
-      expectedPercentage,
-      hoursBehindOrAhead: Math.abs(hoursBehindOrAhead),
-      isAhead
-    };
-  };
-
-  const getDailyTarget = () => {
-    const now = new Date();
-    const yearStart = new Date(now.getFullYear(), 0, 1);
-    const daysPassed = Math.ceil((now.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
-    const daysInYear = 365; // Simplified
-    const daysRemaining = daysInYear - daysPassed + 1;
-    
-    const progress = getYearlyProgress();
-    const dailyTarget = progress.remaining / daysRemaining;
-    
-    return {
-      target: Math.max(0, dailyTarget),
-      daysRemaining
-    };
-  };
-
   return {
     dailyLogs,
     yearlyGoals,
@@ -471,8 +398,8 @@ export const useSupabaseStore = () => {
     addYearlyGoal,
     updateYearlyGoalHours,
     getTodayLog,
-    getYearlyProgress,
-    getDailyTarget,
+    getYearlyProgress: () => getYearlyProgress(dailyLogs),
+    getDailyTarget: () => getDailyTarget(dailyLogs),
     getCurrentDateIST,
     loadUserData,
     YEARLY_GOAL

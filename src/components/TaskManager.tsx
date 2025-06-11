@@ -1,31 +1,18 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSupabaseStore } from "@/hooks/useSupabaseStore";
-import { CheckCircle2, Circle, ArrowRight, Plus, Edit2, Check, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { TaskInput } from "./tasks/TaskInput";
+import { TaskList } from "./tasks/TaskList";
 
 const TaskManager = () => {
   const { getTodayLog, addTask, updateTask, toggleTask, moveTaskToTomorrow, deleteTask, loadUserData, dailyLogs } = useSupabaseStore();
   const [newTask, setNewTask] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
-  const editInputRef = useRef<HTMLInputElement>(null);
   
   const todayLog = getTodayLog();
   
@@ -38,14 +25,6 @@ const TaskManager = () => {
     window.addEventListener('timer-saved', handleTimerSaved);
     return () => window.removeEventListener('timer-saved', handleTimerSaved);
   }, [loadUserData]);
-  
-  // Auto-focus edit input when editing starts
-  useEffect(() => {
-    if (editingTaskId && editInputRef.current) {
-      editInputRef.current.focus();
-      editInputRef.current.select();
-    }
-  }, [editingTaskId]);
   
   // Get tomorrow's tasks from dailyLogs
   const tomorrow = new Date();
@@ -65,7 +44,6 @@ const TaskManager = () => {
       await addTask(newTask.trim(), undefined, targetDate);
       setNewTask("");
       toast.success("Task added successfully! ✅");
-      // Force immediate refresh to show the new task
       await loadUserData();
     } catch (error) {
       toast.error("Failed to add task");
@@ -99,7 +77,7 @@ const TaskManager = () => {
     try {
       await moveTaskToTomorrow(taskId);
       toast.success("Task moved to tomorrow ✅");
-      await loadUserData(); // Refresh to show updated task lists
+      await loadUserData();
     } catch (error) {
       toast.error("Failed to move task");
     }
@@ -113,117 +91,6 @@ const TaskManager = () => {
       toast.error("Failed to delete task");
     }
   };
-
-  const TaskItem = ({ task, showMoveButton = true }: { task: any, showMoveButton?: boolean }) => (
-    <div className="flex items-center space-x-3 p-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors group">
-      <button
-        onClick={() => toggleTask(task.id)}
-        className="text-primary hover:text-primary/80 transition-colors min-w-[20px]"
-      >
-        {task.completed ? (
-          <CheckCircle2 className="w-5 h-5" />
-        ) : (
-          <Circle className="w-5 h-5" />
-        )}
-      </button>
-      
-      <div className="flex-1 min-w-0">
-        {editingTaskId === task.id ? (
-          <div className="flex items-center space-x-2">
-            <Input
-              ref={editInputRef}
-              value={editingTaskTitle}
-              onChange={(e) => setEditingTaskTitle(e.target.value)}
-              className="h-8 text-sm"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSaveEdit(task.id);
-                }
-                if (e.key === 'Escape') {
-                  e.preventDefault();
-                  handleCancelEdit();
-                }
-              }}
-              // FIXED: Removed onBlur handler that was causing premature exit
-              autoFocus
-            />
-            <Button
-              size="sm"
-              onClick={() => handleSaveEdit(task.id)}
-              className="glossy-gradient h-8 w-8 p-0"
-            >
-              <Check className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleCancelEdit}
-              className="h-8 w-8 p-0"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <span className={`text-sm break-words ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-              {task.title}
-            </span>
-            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleEditTask(task.id, task.title)}
-                className="h-8 w-8 p-0 hover:bg-primary/20 min-w-[32px]"
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0 hover:bg-destructive/20 text-destructive min-w-[32px]"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete "{task.title}"? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleDeleteTask(task.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              
-              {showMoveButton && !task.completed && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleMoveToTomorrow(task.id)}
-                  className="h-8 w-8 p-0 hover:bg-accent/20 min-w-[32px]"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in">
@@ -252,34 +119,27 @@ const TaskManager = () => {
                 </Badge>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  placeholder="Add a new task..."
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-                  className="bg-background/50 border-border/50"
-                />
-                <Button 
-                  onClick={() => handleAddTask()} 
-                  className="glossy-gradient px-4 sm:px-6 min-h-[48px] whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add
-                </Button>
-              </div>
+              <TaskInput
+                value={newTask}
+                onChange={setNewTask}
+                onAdd={() => handleAddTask()}
+                placeholder="Add a new task..."
+              />
 
-              <div className="space-y-2">
-                {todayLog.tasks.length === 0 ? (
-                  <div className="text-center py-6 sm:py-8 text-muted-foreground">
-                    No tasks for today. Add one above! 📝
-                  </div>
-                ) : (
-                  todayLog.tasks.map((task) => (
-                    <TaskItem key={task.id} task={task} showMoveButton={true} />
-                  ))
-                )}
-              </div>
+              <TaskList
+                tasks={todayLog.tasks}
+                showMoveButton={true}
+                editingTaskId={editingTaskId}
+                editingTaskTitle={editingTaskTitle}
+                onToggle={toggleTask}
+                onEdit={handleEditTask}
+                onSaveEdit={handleSaveEdit}
+                onCancelEdit={handleCancelEdit}
+                onDelete={handleDeleteTask}
+                onMove={handleMoveToTomorrow}
+                onEditTitleChange={setEditingTaskTitle}
+                emptyMessage="No tasks for today. Add one above! 📝"
+              />
             </div>
           </Card>
         </TabsContent>
@@ -294,34 +154,27 @@ const TaskManager = () => {
                 </Badge>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  placeholder="Add a task for tomorrow..."
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddTask('tomorrow')}
-                  className="bg-background/50 border-border/50"
-                />
-                <Button 
-                  onClick={() => handleAddTask('tomorrow')} 
-                  className="glossy-gradient px-4 sm:px-6 min-h-[48px] whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add
-                </Button>
-              </div>
+              <TaskInput
+                value={newTask}
+                onChange={setNewTask}
+                onAdd={() => handleAddTask('tomorrow')}
+                placeholder="Add a task for tomorrow..."
+              />
 
-              <div className="space-y-2">
-                {tomorrowLog.tasks.length === 0 ? (
-                  <div className="text-center py-6 sm:py-8 text-muted-foreground">
-                    No tasks planned for tomorrow. Plan ahead! 🌅
-                  </div>
-                ) : (
-                  tomorrowLog.tasks.map((task) => (
-                    <TaskItem key={task.id} task={task} showMoveButton={false} />
-                  ))
-                )}
-              </div>
+              <TaskList
+                tasks={tomorrowLog.tasks}
+                showMoveButton={false}
+                editingTaskId={editingTaskId}
+                editingTaskTitle={editingTaskTitle}
+                onToggle={toggleTask}
+                onEdit={handleEditTask}
+                onSaveEdit={handleSaveEdit}
+                onCancelEdit={handleCancelEdit}
+                onDelete={handleDeleteTask}
+                onMove={handleMoveToTomorrow}
+                onEditTitleChange={setEditingTaskTitle}
+                emptyMessage="No tasks planned for tomorrow. Plan ahead! 🌅"
+              />
             </div>
           </Card>
         </TabsContent>
