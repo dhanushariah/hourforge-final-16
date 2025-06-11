@@ -145,23 +145,13 @@ const TaskManager = () => {
                   handleCancelEdit();
                 }
               }}
-              onBlur={(e) => {
-                // Prevent blur from canceling edit if clicking save button
-                const relatedTarget = e.relatedTarget as HTMLElement;
-                if (relatedTarget?.getAttribute('data-action') !== 'save-edit') {
-                  setTimeout(() => {
-                    if (editingTaskId === task.id) {
-                      handleSaveEdit(task.id);
-                    }
-                  }, 100);
-                }
-              }}
+              // FIXED: Removed onBlur handler that was causing premature exit
+              autoFocus
             />
             <Button
               size="sm"
               onClick={() => handleSaveEdit(task.id)}
               className="glossy-gradient h-8 w-8 p-0"
-              data-action="save-edit"
             >
               <Check className="w-4 h-4" />
             </Button>

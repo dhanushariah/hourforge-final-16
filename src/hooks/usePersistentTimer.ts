@@ -236,7 +236,7 @@ export const usePersistentTimer = () => {
     toast.success('Timer resumed! ▶️');
   }, [state, saveTimerState, startInterval]);
 
-  // End timer and save session - BULLETPROOF SAVE ROUTINE
+  // End timer and save session - FIXED TO HANDLE EXISTING DAILY LOGS
   const end = useCallback(async () => {
     if (!user || !sessionId || !storageRef.current) {
       toast.error('No active session to save');
@@ -264,6 +264,7 @@ export const usePersistentTimer = () => {
       }
 
       const endTime = getCurrentTimeIST();
+      const today = getCurrentDateIST();
       
       // Step 1: Update timer session in database
       const { error: sessionError } = await supabase
@@ -280,40 +281,68 @@ export const usePersistentTimer = () => {
         throw new Error(`Failed to update timer session: ${sessionError.message}`);
       }
 
-      // Step 2: Update daily log with the timer hours
-      const today = getCurrentDateIST();
+      // Step 2: FIXED - Check for existing daily log and update it properly
       const roundedHours = Math.round(hours * 100) / 100;
       
       if (roundedHours > 0) {
         // Get current daily log
-        const { data: existingLog } = await supabase
+        const { data: existingLog, error: fetchError } = await supabase
           .from('daily_logs')
-          .select('hours')
+          .select('id, hours')
           .eq('user_id', user.id)
           .eq('date', today)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single to avoid errors
 
-        const currentHours = existingLog?.hours || 0;
-        const newTotal = currentHours + roundedHours;
-
-        if (newTotal > 12) {
-          toast.error(`Adding ${roundedHours.toFixed(2)} hours would exceed the 12-hour daily limit. Current: ${currentHours.toFixed(2)}h`);
-          return;
+        if (fetchError) {
+          console.error('Error fetching existing log:', fetchError);
+          throw new Error(`Failed to fetch daily log: ${fetchError.message}`);
         }
 
-        // Upsert daily log
-        const { error: logError } = await supabase
-          .from('daily_logs')
-          .upsert({
-            user_id: user.id,
-            date: today,
-            hours: newTotal,
-            notes: `Automated Timer Session - ${roundedHours.toFixed(2)}h`,
-          });
+        let newTotal;
+        
+        if (existingLog) {
+          // Update existing log
+          newTotal = existingLog.hours + roundedHours;
+          
+          if (newTotal > 12) {
+            toast.error(`Adding ${roundedHours.toFixed(2)} hours would exceed the 12-hour daily limit. Current: ${existingLog.hours.toFixed(2)}h`);
+            return;
+          }
 
-        if (logError) {
-          console.error('Daily log error:', logError);
-          throw new Error(`Failed to update daily log: ${logError.message}`);
+          const { error: updateError } = await supabase
+            .from('daily_logs')
+            .update({
+              hours: newTotal,
+              notes: `Automated Timer Session - ${roundedHours.toFixed(2)}h added`,
+            })
+            .eq('id', existingLog.id);
+
+          if (updateError) {
+            console.error('Daily log update error:', updateError);
+            throw new Error(`Failed to update daily log: ${updateError.message}`);
+          }
+        } else {
+          // Create new log
+          newTotal = roundedHours;
+          
+          if (newTotal > 12) {
+            toast.error(`Session duration ${roundedHours.toFixed(2)} hours exceeds the 12-hour daily limit.`);
+            return;
+          }
+
+          const { error: insertError } = await supabase
+            .from('daily_logs')
+            .insert({
+              user_id: user.id,
+              date: today,
+              hours: newTotal,
+              notes: `Automated Timer Session - ${roundedHours.toFixed(2)}h`,
+            });
+
+          if (insertError) {
+            console.error('Daily log insert error:', insertError);
+            throw new Error(`Failed to create daily log: ${insertError.message}`);
+          }
         }
 
         console.log(`Successfully saved ${roundedHours.toFixed(2)} hours to daily log`);
