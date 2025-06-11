@@ -126,12 +126,13 @@ export const usePersistentTimer = () => {
       const endTime = new Date().toISOString();
       let finalPausedDuration = pausedDuration;
       
-      // If paused, add current pause duration
+      // If paused, add current pause duration to final calculation
       if (state === 'paused' && pauseStartTime) {
         finalPausedDuration += Date.now() - pauseStartTime;
       }
       
-      const totalElapsed = calculateElapsedSeconds(startTime, Date.now(), finalPausedDuration, 'idle');
+      // Calculate total elapsed seconds properly including paused time
+      const totalElapsed = Math.max(0, Math.floor((Date.now() - startTime - finalPausedDuration) / 1000));
       
       await updateTimerSession(sessionId, endTime, totalElapsed);
       

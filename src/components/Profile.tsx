@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useSupabaseStore } from "@/hooks/useSupabaseStore";
-import { LogOut, Moon, Sun, User, Target, Calendar, TrendingUp } from "lucide-react";
+import { LogOut, Moon, Sun, User, Target, Calendar, TrendingUp, Crown, Star, Zap } from "lucide-react";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -68,6 +68,48 @@ const Profile = () => {
             <div className="text-sm text-muted-foreground mt-1">
               Member since {new Date(user?.created_at || '').toLocaleDateString()}
             </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Upgrade to Pro Section */}
+      <Card className="p-6 relative overflow-hidden border-2 border-transparent bg-gradient-to-br from-yellow-400/20 via-amber-500/20 to-orange-600/20 hover-lift">
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 via-amber-500/10 to-orange-600/10 animate-pulse"></div>
+        <div className="relative z-10 text-center space-y-4">
+          <div className="flex items-center justify-center space-x-2">
+            <Crown size={28} className="text-yellow-500" />
+            <h3 className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 bg-clip-text text-transparent">
+              Upgrade to Pro
+            </h3>
+            <Crown size={28} className="text-yellow-500" />
+          </div>
+          
+          <p className="text-sm text-muted-foreground">
+            Unlock premium features and supercharge your productivity
+          </p>
+          
+          <div className="grid grid-cols-3 gap-3 my-4">
+            <div className="text-center p-3 rounded-xl bg-gradient-to-br from-yellow-400/20 to-amber-500/20">
+              <Star size={20} className="text-yellow-500 mx-auto mb-1" />
+              <div className="text-xs font-medium text-foreground">Unlimited Goals</div>
+            </div>
+            <div className="text-center p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-600/20">
+              <Zap size={20} className="text-amber-500 mx-auto mb-1" />
+              <div className="text-xs font-medium text-foreground">Advanced Analytics</div>
+            </div>
+            <div className="text-center p-3 rounded-xl bg-gradient-to-br from-orange-600/20 to-yellow-400/20">
+              <Target size={20} className="text-orange-500 mx-auto mb-1" />
+              <div className="text-xs font-medium text-foreground">Priority Support</div>
+            </div>
+          </div>
+          
+          <Button className="w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 hover:from-yellow-500 hover:via-amber-600 hover:to-orange-700 text-black font-bold text-lg py-6 shadow-lg transform hover:scale-105 transition-all duration-200">
+            <Crown size={20} className="mr-2" />
+            Upgrade Now - $9.99/month
+          </Button>
+          
+          <div className="text-xs text-muted-foreground">
+            ✨ 30-day money-back guarantee
           </div>
         </div>
       </Card>
