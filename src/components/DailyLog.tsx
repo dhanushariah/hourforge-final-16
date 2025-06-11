@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,19 @@ import { Label } from "@/components/ui/label";
 import { useSupabaseStore } from "@/hooks/useSupabaseStore";
 
 const DailyLog = () => {
-  const { dailyLogs, addDailyHours, getTodayLog, getCurrentDateIST } = useSupabaseStore();
+  const { dailyLogs, addDailyHours, getTodayLog, getCurrentDateIST, loadUserData } = useSupabaseStore();
   const [hoursInput, setHoursInput] = useState("");
   const todayLog = getTodayLog();
+
+  // Listen for timer saves to refresh data
+  useEffect(() => {
+    const handleTimerSaved = () => {
+      loadUserData();
+    };
+    
+    window.addEventListener('timer-saved', handleTimerSaved);
+    return () => window.removeEventListener('timer-saved', handleTimerSaved);
+  }, [loadUserData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,25 +36,25 @@ const DailyLog = () => {
     .slice(0, 7);
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold text-foreground">Daily Log</h1>
-        <p className="text-muted-foreground">Log and track your daily hours</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Daily Log</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Log and track your daily hours</p>
       </div>
 
       {/* Today's Entry */}
-      <Card className="p-6 glassmorphism border-primary/20">
+      <Card className="p-4 sm:p-6 glassmorphism border-primary/20">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-semibold text-foreground">Today's Hours</h3>
-            <div className="text-3xl font-bold gradient-text">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground">Today's Hours</h3>
+            <div className="text-2xl sm:text-3xl font-bold gradient-text">
               {todayLog.hours.toFixed(1)}
             </div>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="hours" className="text-foreground">Update Today's Hours</Label>
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 id="hours"
                 type="number"
@@ -56,7 +66,10 @@ const DailyLog = () => {
                 onChange={(e) => setHoursInput(e.target.value)}
                 className="bg-background/50 border-border/50 text-foreground"
               />
-              <Button type="submit" className="px-6 gradient-bg text-primary-foreground">
+              <Button 
+                type="submit" 
+                className="glossy-gradient text-primary-foreground px-4 sm:px-6 min-h-[40px] whitespace-nowrap"
+              >
                 Update
               </Button>
             </div>
@@ -68,11 +81,11 @@ const DailyLog = () => {
       </Card>
 
       {/* Recent History */}
-      <Card className="p-6 glassmorphism border-border/50">
-        <h3 className="text-lg font-semibold mb-4 text-foreground">Recent History</h3>
+      <Card className="p-4 sm:p-6 glassmorphism border-border/50">
+        <h3 className="text-base sm:text-lg font-semibold mb-4 text-foreground">Recent History</h3>
         
         {recentLogs.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-6 sm:py-8 text-muted-foreground">
             No entries yet. Start logging your hours! 📝
           </div>
         ) : (

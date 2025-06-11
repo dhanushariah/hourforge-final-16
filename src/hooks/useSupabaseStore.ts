@@ -226,6 +226,72 @@ export const useSupabaseStore = () => {
     }
   };
 
+  const updateTask = async (taskId: string, title: string, description?: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          title: title.trim(),
+          description: description?.trim() || null
+        })
+        .eq('id', taskId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setDailyLogs(prev =>
+        prev.map(log => ({
+          ...log,
+          tasks: log.tasks.map(t =>
+            t.id === taskId ? { ...t, title: title.trim(), description: description?.trim() } : t
+          )
+        }))
+      );
+
+    } catch (error: any) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error updating task",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setDailyLogs(prev =>
+        prev.map(log => ({
+          ...log,
+          tasks: log.tasks.filter(t => t.id !== taskId)
+        }))
+      );
+
+    } catch (error: any) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error deleting task",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const moveTaskToTomorrow = async (taskId: string) => {
     if (!user) return;
 
@@ -416,6 +482,8 @@ export const useSupabaseStore = () => {
     loading,
     addDailyHours,
     addTask,
+    updateTask,
+    deleteTask,
     toggleTask,
     moveTaskToTomorrow,
     addYearlyGoal,

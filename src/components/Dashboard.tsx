@@ -1,13 +1,24 @@
 
+import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useSupabaseStore } from "@/hooks/useSupabaseStore";
 
 const Dashboard = () => {
-  const { getTodayLog } = useSupabaseStore();
+  const { getTodayLog, loadUserData } = useSupabaseStore();
   
   const todayLog = getTodayLog();
   const dailyProgress = (todayLog.hours / 12) * 100;
+
+  // Listen for timer saves to refresh data
+  useEffect(() => {
+    const handleTimerSaved = () => {
+      loadUserData();
+    };
+    
+    window.addEventListener('timer-saved', handleTimerSaved);
+    return () => window.removeEventListener('timer-saved', handleTimerSaved);
+  }, [loadUserData]);
 
   // Calculate yearly progress based on expected completion
   const getYearlyProgress = () => {
@@ -44,19 +55,19 @@ const Dashboard = () => {
   const dailyTarget = getDailyTarget();
 
   return (
-    <div className="space-y-6 p-4 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold gradient-text">
+        <h1 className="text-2xl sm:text-3xl font-bold gradient-text">
           HourForge
         </h1>
-        <p className="text-muted-foreground">Track your productive hours</p>
+        <p className="text-sm sm:text-base text-muted-foreground">Track your productive hours</p>
       </div>
 
       {/* Yearly Progress */}
-      <Card className="p-6 glassmorphism border-primary/20 hover-lift soft-gradient">
+      <Card className="p-4 sm:p-6 glassmorphism border-primary/20 hover-lift soft-gradient">
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Yearly Progress</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">Yearly Progress</h2>
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-foreground">
               <span>Expected Progress</span>
@@ -105,9 +116,9 @@ const Dashboard = () => {
       </Card>
 
       {/* Daily Progress */}
-      <Card className="p-6 glassmorphism border-primary/20 hover-lift soft-gradient">
+      <Card className="p-4 sm:p-6 glassmorphism border-primary/20 hover-lift soft-gradient">
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Today's Progress</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">Today's Progress</h2>
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-foreground">
               <span>Daily Hours</span>
@@ -121,13 +132,13 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-xl sm:text-2xl font-bold text-primary">
                 {dailyTarget.target}
               </div>
               <div className="text-xs text-muted-foreground">Target/Day</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-foreground">
+              <div className="text-xl sm:text-2xl font-bold text-foreground">
                 {dailyTarget.daysRemaining}
               </div>
               <div className="text-xs text-muted-foreground">Days Left</div>

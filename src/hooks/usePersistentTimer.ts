@@ -8,7 +8,7 @@ export type TimerState = 'idle' | 'running' | 'paused';
 
 interface TimerStorage {
   sessionId: string | null;
-  startTime: number; // Use number timestamp instead of string
+  startTime: number;
   pausedDuration: number;
   state: TimerState;
   date: string;
@@ -106,7 +106,6 @@ export const usePersistentTimer = () => {
     const today = getCurrentDateIST();
 
     if (stored && stored.date === today && stored.state === 'running' && stored.startTime) {
-      // Calculate how long the timer has been running
       const now = Date.now();
       const elapsedMs = now - stored.startTime - stored.pausedDuration;
       const elapsedSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
@@ -119,16 +118,17 @@ export const usePersistentTimer = () => {
       startInterval();
       toast.success('Timer resumed from where you left off!');
     } else if (stored && stored.date !== today) {
-      // Clear old timer data from previous day
       clearTimerState();
     }
   }, [user, loadTimerState, clearTimerState, startInterval]);
 
   // Start timer
   const start = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Please sign in to use the timer');
+      return;
+    }
 
-    // Prevent multiple timers for the same day
     const stored = loadTimerState();
     const today = getCurrentDateIST();
     
@@ -168,10 +168,10 @@ export const usePersistentTimer = () => {
       saveTimerState(timerData);
       
       startInterval();
-      toast.success('Timer started!');
+      toast.success('Timer started! 🚀');
     } catch (error: any) {
       console.error('Error starting timer:', error);
-      toast.error('Failed to start timer');
+      toast.error('Failed to start timer. Please try again.');
     }
   }, [user, loadTimerState, saveTimerState, startInterval]);
 
@@ -191,7 +191,7 @@ export const usePersistentTimer = () => {
     }
     
     setState('paused');
-    toast.info('Timer paused');
+    toast.info('Timer paused ⏸️');
   }, [loadTimerState, saveTimerState, stopInterval]);
 
   // Resume timer
@@ -212,20 +212,36 @@ export const usePersistentTimer = () => {
       saveTimerState(updatedData);
     }
 
-    toast.success('Timer resumed!');
+    toast.success('Timer resumed! ▶️');
   }, [loadTimerState, saveTimerState, startInterval]);
 
-  // End timer and save session
+  // End timer and save session - CRITICAL ROBUST SAVE ROUTINE
   const end = useCallback(async () => {
-    if (!user || !sessionId) return;
+    if (!user || !sessionId) {
+      toast.error('No active session to save');
+      return;
+    }
 
     stopInterval();
 
     try {
       const endTime = getCurrentTimeIST();
       const finalSeconds = calculateElapsedSeconds();
+      const hours = finalSeconds / 3600;
       
-      const { error } = await supabase
+      if (finalSeconds < 60) {
+        toast.error('Session too short (less than 1 minute). Not saved.');
+        // Reset timer without saving
+        setSeconds(0);
+        setState('idle');
+        setSessionId(null);
+        startTimeRef.current = null;
+        clearTimerState();
+        return;
+      }
+
+      // First, update the timer session
+      const { error: sessionError } = await supabase
         .from('timer_sessions')
         .update({
           end_time: endTime,
@@ -234,12 +250,13 @@ export const usePersistentTimer = () => {
         .eq('id', sessionId)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (sessionError) throw sessionError;
 
-      const hours = Math.round((finalSeconds / 3600) * 100) / 100;
+      // Then, update or create daily log entry
+      const today = getCurrentDateIST();
+      const roundedHours = Math.round(hours * 100) / 100;
       
-      if (hours > 0) {
-        const today = getCurrentDateIST();
+      if (roundedHours > 0) {
         const { data: existingLog } = await supabase
           .from('daily_logs')
           .select('hours')
@@ -248,21 +265,25 @@ export const usePersistentTimer = () => {
           .single();
 
         const currentHours = existingLog?.hours || 0;
-        const newTotal = currentHours + hours;
+        const newTotal = currentHours + roundedHours;
 
         if (newTotal > 12) {
-          toast.error(`Adding ${hours.toFixed(2)} hours would exceed the 12-hour daily limit. Current: ${currentHours.toFixed(2)}h`);
-        } else {
-          await supabase
-            .from('daily_logs')
-            .upsert({
-              user_id: user.id,
-              date: today,
-              hours: newTotal,
-            });
-
-          toast.success(`Session completed! Added ${hours.toFixed(2)} hours to your daily log. Total today: ${newTotal.toFixed(2)}h`);
+          toast.error(`Adding ${roundedHours.toFixed(2)} hours would exceed the 12-hour daily limit. Current: ${currentHours.toFixed(2)}h`);
+          return;
         }
+
+        const { error: logError } = await supabase
+          .from('daily_logs')
+          .upsert({
+            user_id: user.id,
+            date: today,
+            hours: newTotal,
+            notes: `Logged via Timer - ${roundedHours.toFixed(2)}h session`,
+          });
+
+        if (logError) throw logError;
+
+        toast.success(`Session saved successfully! ✅\nAdded ${roundedHours.toFixed(2)} hours to your daily log.\nTotal today: ${newTotal.toFixed(2)}h`);
       }
 
       // Reset timer completely
@@ -272,9 +293,12 @@ export const usePersistentTimer = () => {
       startTimeRef.current = null;
       clearTimerState();
 
+      // Force refresh of all data to sync across views
+      window.dispatchEvent(new CustomEvent('timer-saved'));
+
     } catch (error: any) {
       console.error('Error ending timer:', error);
-      toast.error('Failed to end timer');
+      toast.error('Failed to save session. Please try again.');
     }
   }, [user, sessionId, stopInterval, calculateElapsedSeconds, clearTimerState]);
 
@@ -286,7 +310,7 @@ export const usePersistentTimer = () => {
     setSessionId(null);
     startTimeRef.current = null;
     clearTimerState();
-    toast.info('Timer reset');
+    toast.info('Timer reset 🔄');
   }, [stopInterval, clearTimerState]);
 
   // Toggle between start/pause
