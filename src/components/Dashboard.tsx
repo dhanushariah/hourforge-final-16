@@ -4,14 +4,44 @@ import { Progress } from "@/components/ui/progress";
 import { useSupabaseStore } from "@/hooks/useSupabaseStore";
 
 const Dashboard = () => {
-  const { getYearlyProgress, getDailyTarget, getTodayLog } = useSupabaseStore();
+  const { getTodayLog } = useSupabaseStore();
   
-  const yearlyProgress = getYearlyProgress();
-  const dailyTarget = getDailyTarget();
   const todayLog = getTodayLog();
   const dailyProgress = (todayLog.hours / 12) * 100;
 
-  console.log('Yearly Progress Data:', yearlyProgress); // Debug log
+  // Calculate yearly progress based on expected completion
+  const getYearlyProgress = () => {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const daysPassed = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const daysInYear = 365;
+    const daysRemaining = daysInYear - daysPassed;
+    
+    const goal = 4380; // 12 hours * 365 days
+    const expectedCompleted = daysPassed * 12; // 12 hours per day expected
+    const remainingHours = daysRemaining * 12;
+    const expectedPercentage = Math.min(100, (expectedCompleted / goal) * 100);
+
+    return {
+      goal,
+      expectedCompleted,
+      remainingHours,
+      percentage: expectedPercentage,
+      daysPassed,
+      daysRemaining
+    };
+  };
+
+  const yearlyProgress = getYearlyProgress();
+
+  const getDailyTarget = () => {
+    return {
+      target: 12, // Fixed 12 hours per day target
+      daysRemaining: yearlyProgress.daysRemaining
+    };
+  };
+
+  const dailyTarget = getDailyTarget();
 
   return (
     <div className="space-y-6 p-4 animate-fade-in">
@@ -29,8 +59,8 @@ const Dashboard = () => {
           <h2 className="text-xl font-semibold text-foreground">Yearly Progress</h2>
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-foreground">
-              <span>Hours Completed</span>
-              <span className="font-medium">{yearlyProgress.completed.toFixed(1)}</span>
+              <span>Expected Progress</span>
+              <span className="font-medium">{yearlyProgress.expectedCompleted} hours</span>
             </div>
             <Progress 
               value={yearlyProgress.percentage} 
@@ -38,11 +68,11 @@ const Dashboard = () => {
             />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{yearlyProgress.percentage.toFixed(1)}% Complete</span>
-              <span>{Math.max(0, yearlyProgress.remaining).toFixed(0)} hours remaining</span>
+              <span>{yearlyProgress.remainingHours} hours remaining</span>
             </div>
           </div>
           
-          <div className="grid grid-cols-4 gap-3 pt-4 border-t border-border/50">
+          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border/50">
             <div className="text-center">
               <div className="text-lg font-bold text-primary">
                 {yearlyProgress.goal}
@@ -50,34 +80,25 @@ const Dashboard = () => {
               <div className="text-xs text-muted-foreground">Goal</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-foreground">
-                {yearlyProgress.expectedHours.toFixed(0)}
-              </div>
-              <div className="text-xs text-muted-foreground">Expected</div>
-            </div>
-            <div className="text-center">
               <div className="text-lg font-bold text-accent">
-                {yearlyProgress.completed.toFixed(0)}
+                {yearlyProgress.expectedCompleted}
               </div>
-              <div className="text-xs text-muted-foreground">Actual</div>
+              <div className="text-xs text-muted-foreground">Completed</div>
             </div>
             <div className="text-center">
-              <div className={`text-lg font-bold ${yearlyProgress.isAhead ? 'text-success' : 'text-warning'}`}>
-                {yearlyProgress.isAhead ? '+' : '-'}{yearlyProgress.hoursBehindOrAhead.toFixed(0)}
+              <div className="text-lg font-bold text-foreground">
+                {yearlyProgress.remainingHours}
               </div>
-              <div className="text-xs text-muted-foreground">Difference</div>
+              <div className="text-xs text-muted-foreground">Remaining</div>
             </div>
           </div>
 
           <div className="text-center p-3 rounded-2xl bg-secondary/50">
             <div className="text-sm text-foreground">
-              You're {yearlyProgress.isAhead ? 'ahead by' : 'behind by'}{' '}
-              <span className={`font-bold ${yearlyProgress.isAhead ? 'text-success' : 'text-warning'}`}>
-                {yearlyProgress.hoursBehindOrAhead.toFixed(1)} hours
-              </span>
+              Day {yearlyProgress.daysPassed} of 365 • {yearlyProgress.daysRemaining} days remaining
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              Day {yearlyProgress.daysPassed} of 365 • Expected: {yearlyProgress.expectedPercentage.toFixed(1)}%
+              Expected: {yearlyProgress.expectedCompleted} hours ({yearlyProgress.percentage.toFixed(1)}%)
             </div>
           </div>
         </div>
@@ -101,7 +122,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">
-                {dailyTarget.target.toFixed(1)}
+                {dailyTarget.target}
               </div>
               <div className="text-xs text-muted-foreground">Target/Day</div>
             </div>

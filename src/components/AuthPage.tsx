@@ -82,7 +82,7 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-6 bg-card/50 backdrop-blur-sm border-border/50">
         <div className="text-center space-y-2 mb-6">
-          <h1 className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold gradient-text">
             HourForge
           </h1>
           <p className="text-muted-foreground">
@@ -135,7 +135,7 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
 
           <Button 
             type="submit" 
-            className="w-full gradient-bg"
+            className="w-full glossy-gradient text-white font-medium shadow-lg"
             disabled={loading}
           >
             {loading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
