@@ -22,11 +22,11 @@ const Dashboard = () => {
       </div>
 
       {/* Yearly Progress */}
-      <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+      <Card className="p-6 glassmorphism border-primary/20">
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Yearly Progress</h2>
+          <h2 className="text-xl font-semibold text-foreground">Yearly Progress</h2>
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm text-foreground">
               <span>Hours Completed</span>
               <span className="font-medium">{yearlyProgress.completed.toFixed(1)}</span>
             </div>
@@ -45,27 +45,40 @@ const Dashboard = () => {
               <div className="text-xs text-muted-foreground">Completed</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-foreground">
                 {yearlyProgress.goal}
               </div>
               <div className="text-xs text-muted-foreground">Goal</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-warning">
+              <div className={`text-2xl font-bold ${yearlyProgress.isAhead ? 'text-success' : 'text-warning'}`}>
                 {yearlyProgress.expectedHours.toFixed(0)}
               </div>
               <div className="text-xs text-muted-foreground">Expected ({yearlyProgress.daysPassed} days)</div>
+            </div>
+          </div>
+
+          {/* Progress Status */}
+          <div className="text-center p-3 rounded-2xl bg-secondary/50">
+            <div className="text-sm text-foreground">
+              You're {yearlyProgress.isAhead ? 'ahead by' : 'behind by'}{' '}
+              <span className={`font-bold ${yearlyProgress.isAhead ? 'text-success' : 'text-warning'}`}>
+                {yearlyProgress.hoursBehindOrAhead.toFixed(1)} hours
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Expected: {yearlyProgress.expectedPercentage.toFixed(1)}% | Actual: {yearlyProgress.percentage.toFixed(1)}%
             </div>
           </div>
         </div>
       </Card>
 
       {/* Daily Progress */}
-      <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+      <Card className="p-6 glassmorphism border-primary/20">
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Today's Progress</h2>
+          <h2 className="text-xl font-semibold text-foreground">Today's Progress</h2>
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm text-foreground">
               <span>Daily Hours</span>
               <span className="font-medium">{todayLog.hours.toFixed(1)} / 12</span>
             </div>
@@ -83,7 +96,7 @@ const Dashboard = () => {
               <div className="text-xs text-muted-foreground">Target/Day</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-foreground">
                 {dailyTarget.daysRemaining}
               </div>
               <div className="text-xs text-muted-foreground">Days Left</div>
@@ -96,7 +109,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-2 gap-4">
         <Card className="p-4 bg-gradient-to-br from-primary/20 to-accent/20 border-primary/20">
           <div className="text-center">
-            <div className="text-lg font-bold">
+            <div className="text-lg font-bold text-foreground">
               {todayLog.tasks.filter(t => t.completed).length}
             </div>
             <div className="text-xs text-muted-foreground">Tasks Done</div>
@@ -105,7 +118,7 @@ const Dashboard = () => {
         
         <Card className="p-4 bg-gradient-to-br from-success/20 to-primary/20 border-success/20">
           <div className="text-center">
-            <div className="text-lg font-bold">
+            <div className="text-lg font-bold text-foreground">
               {Math.floor(yearlyProgress.percentage)}%
             </div>
             <div className="text-xs text-muted-foreground">Year Complete</div>

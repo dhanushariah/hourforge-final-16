@@ -28,22 +28,22 @@ const DailyLog = () => {
   return (
     <div className="space-y-6 p-4">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">Daily Log</h1>
+        <h1 className="text-2xl font-bold text-foreground">Daily Log</h1>
         <p className="text-muted-foreground">Log and track your daily hours</p>
       </div>
 
       {/* Today's Entry */}
-      <Card className="p-6 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+      <Card className="p-6 glassmorphism border-primary/20">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="text-center space-y-2">
-            <h3 className="text-lg font-semibold">Today's Hours</h3>
+            <h3 className="text-lg font-semibold text-foreground">Today's Hours</h3>
             <div className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">
               {todayLog.hours.toFixed(1)}
             </div>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="hours">Update Today's Hours</Label>
+            <Label htmlFor="hours" className="text-foreground">Update Today's Hours</Label>
             <div className="flex space-x-2">
               <Input
                 id="hours"
@@ -54,9 +54,9 @@ const DailyLog = () => {
                 placeholder="Enter hours (max 12)"
                 value={hoursInput}
                 onChange={(e) => setHoursInput(e.target.value)}
-                className="bg-background/50 border-border/50"
+                className="bg-background/50 border-border/50 text-foreground"
               />
-              <Button type="submit" className="px-6 gradient-bg">
+              <Button type="submit" className="px-6 gradient-bg text-primary-foreground">
                 Update
               </Button>
             </div>
@@ -68,8 +68,8 @@ const DailyLog = () => {
       </Card>
 
       {/* Recent History */}
-      <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-        <h3 className="text-lg font-semibold mb-4">Recent History</h3>
+      <Card className="p-6 glassmorphism border-border/50">
+        <h3 className="text-lg font-semibold mb-4 text-foreground">Recent History</h3>
         
         {recentLogs.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
@@ -84,14 +84,14 @@ const DailyLog = () => {
               return (
                 <div
                   key={log.date}
-                  className={`flex justify-between items-center p-3 rounded-xl ${
+                  className={`flex justify-between items-center p-3 rounded-2xl ${
                     isToday 
                       ? 'bg-primary/20 border border-primary/30' 
                       : 'bg-secondary/50'
                   }`}
                 >
                   <div>
-                    <div className="font-medium">
+                    <div className="font-medium text-foreground">
                       {isToday ? 'Today' : date.toLocaleDateString('en-US', { 
                         weekday: 'short', 
                         month: 'short', 
@@ -104,7 +104,7 @@ const DailyLog = () => {
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-lg font-bold">
+                    <div className="text-lg font-bold text-foreground">
                       {log.hours.toFixed(1)}h
                     </div>
                     <div className="text-xs text-muted-foreground">

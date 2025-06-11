@@ -7,12 +7,11 @@ import ProductivityTimer from '@/components/ProductivityTimer';
 import DailyLog from '@/components/DailyLog';
 import TaskManager from '@/components/TaskManager';
 import YearlyGoals from '@/components/YearlyGoals';
+import Profile from '@/components/Profile';
 import BottomNavigation from '@/components/BottomNavigation';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
 
 const Index = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   if (loading) {
@@ -44,6 +43,8 @@ const Index = () => {
         return <TaskManager />;
       case 'goals':
         return <YearlyGoals />;
+      case 'profile':
+        return <Profile />;
       default:
         return <Dashboard />;
     }
@@ -52,20 +53,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
       <div className="max-w-md mx-auto">
-        {/* Header with logout */}
-        <div className="flex justify-between items-center p-4">
-          <div></div>
-          <Button
-            onClick={signOut}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <LogOut size={16} />
-            Sign Out
-          </Button>
-        </div>
-        
         {renderActiveComponent()}
       </div>
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />

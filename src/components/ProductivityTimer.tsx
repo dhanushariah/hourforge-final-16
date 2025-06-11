@@ -21,12 +21,12 @@ const ProductivityTimer = () => {
   return (
     <div className="space-y-6 p-4">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">Productivity Timer</h1>
+        <h1 className="text-2xl font-bold text-foreground">Productivity Timer</h1>
         <p className="text-muted-foreground">Track your focused work time</p>
       </div>
 
       {/* Timer Display with Progress Ring */}
-      <Card className="p-8 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+      <Card className="p-8 glassmorphism border-primary/20">
         <div className="text-center space-y-6">
           {/* Progress Ring around Timer */}
           <div className="relative inline-flex items-center justify-center">
@@ -63,7 +63,7 @@ const ProductivityTimer = () => {
             </svg>
             
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="text-4xl font-bold tracking-tight gradient-bg bg-clip-text text-transparent">
+              <div className="text-4xl font-bold tracking-tight text-foreground">
                 {timer.formattedTime}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
@@ -72,69 +72,72 @@ const ProductivityTimer = () => {
             </div>
           </div>
           
-          <div className="flex justify-center space-x-3">
-            {timer.isIdle && (
-              <Button
-                onClick={timer.start}
-                size="lg"
-                className="px-8 py-3 rounded-2xl gradient-bg hover:opacity-90 flex items-center gap-2"
-              >
-                <Play size={20} />
-                Start Timer
-              </Button>
-            )}
-            
-            {timer.isRunning && (
-              <>
+          {/* Fixed Timer Controls Container */}
+          <div className="sticky bottom-4 z-10">
+            <div className="flex flex-wrap justify-center gap-3 p-4 bg-background/80 backdrop-blur-sm rounded-2xl border border-border/50">
+              {timer.isIdle && (
                 <Button
-                  onClick={timer.pause}
+                  onClick={timer.start}
                   size="lg"
-                  variant="outline"
-                  className="px-8 py-3 rounded-2xl flex items-center gap-2"
-                >
-                  <Pause size={20} />
-                  Pause
-                </Button>
-                <Button
-                  onClick={timer.end}
-                  size="lg"
-                  className="px-8 py-3 rounded-2xl bg-destructive hover:bg-destructive/90 flex items-center gap-2"
-                >
-                  <Square size={20} />
-                  End & Save
-                </Button>
-              </>
-            )}
-            
-            {timer.isPaused && (
-              <>
-                <Button
-                  onClick={timer.resume}
-                  size="lg"
-                  className="px-8 py-3 rounded-2xl gradient-bg hover:opacity-90 flex items-center gap-2"
+                  className="px-8 py-3 rounded-2xl gradient-bg hover:opacity-90 flex items-center gap-2 text-primary-foreground"
                 >
                   <Play size={20} />
-                  Resume
+                  Start Timer
                 </Button>
-                <Button
-                  onClick={timer.end}
-                  size="lg"
-                  className="px-8 py-3 rounded-2xl bg-destructive hover:bg-destructive/90 flex items-center gap-2"
-                >
-                  <Square size={20} />
-                  End & Save
-                </Button>
-                <Button
-                  onClick={timer.reset}
-                  size="lg"
-                  variant="outline"
-                  className="px-8 py-3 rounded-2xl flex items-center gap-2"
-                >
-                  <RotateCcw size={20} />
-                  Reset
-                </Button>
-              </>
-            )}
+              )}
+              
+              {timer.isRunning && (
+                <>
+                  <Button
+                    onClick={timer.pause}
+                    size="lg"
+                    variant="outline"
+                    className="px-6 py-3 rounded-2xl flex items-center gap-2 text-foreground"
+                  >
+                    <Pause size={20} />
+                    Pause
+                  </Button>
+                  <Button
+                    onClick={timer.end}
+                    size="lg"
+                    className="px-6 py-3 rounded-2xl bg-destructive hover:bg-destructive/90 flex items-center gap-2 text-destructive-foreground"
+                  >
+                    <Square size={20} />
+                    End & Save
+                  </Button>
+                </>
+              )}
+              
+              {timer.isPaused && (
+                <div className="flex flex-wrap justify-center gap-3">
+                  <Button
+                    onClick={timer.resume}
+                    size="lg"
+                    className="px-6 py-3 rounded-2xl gradient-bg hover:opacity-90 flex items-center gap-2 text-primary-foreground"
+                  >
+                    <Play size={20} />
+                    Resume
+                  </Button>
+                  <Button
+                    onClick={timer.end}
+                    size="lg"
+                    className="px-6 py-3 rounded-2xl bg-destructive hover:bg-destructive/90 flex items-center gap-2 text-destructive-foreground"
+                  >
+                    <Square size={20} />
+                    End & Save
+                  </Button>
+                  <Button
+                    onClick={timer.reset}
+                    size="lg"
+                    variant="outline"
+                    className="px-6 py-3 rounded-2xl flex items-center gap-2 text-foreground"
+                  >
+                    <RotateCcw size={20} />
+                    Reset
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           {timer.isRunning && (
@@ -146,26 +149,26 @@ const ProductivityTimer = () => {
       </Card>
 
       {/* Session Info */}
-      <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+      <Card className="p-6 glassmorphism border-border/50">
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Today's Progress</h3>
+          <h3 className="text-lg font-semibold text-foreground">Today's Progress</h3>
           
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-secondary/50 rounded-xl">
+            <div className="text-center p-4 bg-secondary/50 rounded-2xl">
               <div className="text-xl font-bold text-primary">
                 {timer.hours.toFixed(2)}h
               </div>
               <div className="text-xs text-muted-foreground">Current Session</div>
             </div>
             
-            <div className="text-center p-4 bg-secondary/50 rounded-xl">
-              <div className="text-xl font-bold">
+            <div className="text-center p-4 bg-secondary/50 rounded-2xl">
+              <div className="text-xl font-bold text-foreground">
                 {todayLog.hours.toFixed(1)}h
               </div>
               <div className="text-xs text-muted-foreground">Today's Total</div>
             </div>
             
-            <div className="text-center p-4 bg-secondary/50 rounded-xl">
+            <div className="text-center p-4 bg-secondary/50 rounded-2xl">
               <div className="text-xl font-bold text-accent">
                 {Math.max(0, dailyGoal - todayLog.hours).toFixed(1)}h
               </div>

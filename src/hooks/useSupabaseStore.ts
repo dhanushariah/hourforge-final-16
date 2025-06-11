@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -174,10 +173,14 @@ export const useSupabaseStore = () => {
     }
   };
 
-  const addTask = async (title: string, description?: string) => {
+  const addTask = async (title: string, description?: string, targetDate?: string) => {
     if (!user) return;
 
     const today = getCurrentDateIST();
+    const taskDate = targetDate === 'tomorrow' ? 
+      new Date(new Date(today).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
+      today;
+
     try {
       const { data, error } = await supabase
         .from('tasks')
@@ -186,33 +189,74 @@ export const useSupabaseStore = () => {
           title,
           description: description || null,
           completed: false,
-          date: today,
+          date: taskDate,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Update local state
-      setDailyLogs(prev => {
-        const existingIndex = prev.findIndex(log => log.date === today);
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex].tasks.push(data);
-          return updated;
-        } else {
-          return [{
-            date: today,
-            hours: 0,
-            tasks: [data]
-          }, ...prev];
-        }
-      });
+      // Update local state for today's tasks only
+      if (taskDate === today) {
+        setDailyLogs(prev => {
+          const existingIndex = prev.findIndex(log => log.date === today);
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex].tasks.push(data);
+            return updated;
+          } else {
+            return [{
+              date: today,
+              hours: 0,
+              tasks: [data]
+            }, ...prev];
+          }
+        });
+      }
 
     } catch (error: any) {
       console.error('Error adding task:', error);
       toast({
         title: "Error adding task",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const moveTaskToTomorrow = async (taskId: string) => {
+    if (!user) return;
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowISO = tomorrow.toISOString().split('T')[0];
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ date: tomorrowISO })
+        .eq('id', taskId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Remove from today's local state
+      setDailyLogs(prev =>
+        prev.map(log => ({
+          ...log,
+          tasks: log.tasks.filter(t => t.id !== taskId)
+        }))
+      );
+
+      toast({
+        title: "Task moved",
+        description: "Task moved to tomorrow",
+      });
+
+    } catch (error: any) {
+      console.error('Error moving task:', error);
+      toast({
+        title: "Error moving task",
         description: error.message,
         variant: "destructive",
       });
@@ -377,6 +421,7 @@ export const useSupabaseStore = () => {
     addDailyHours,
     addTask,
     toggleTask,
+    moveTaskToTomorrow,
     addYearlyGoal,
     updateYearlyGoalHours,
     getTodayLog,
