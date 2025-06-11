@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useProductivityStore } from "@/hooks/useProductivityStore";
+import { useSupabaseStore } from "@/hooks/useSupabaseStore";
 
 const TaskManager = () => {
-  const { addTask, toggleTask, getTodayLog } = useProductivityStore();
+  const { addTask, toggleTask, getTodayLog } = useSupabaseStore();
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   
@@ -106,7 +106,7 @@ const TaskManager = () => {
                 <div className="flex items-start space-x-3">
                   <Checkbox
                     checked={task.completed}
-                    onCheckedChange={() => toggleTask(task.id)}
+                    onCheckedChange={() => toggleTask(task.id!)}
                     className="mt-1"
                   />
                   

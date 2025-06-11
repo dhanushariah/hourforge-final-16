@@ -1,10 +1,10 @@
 
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useProductivityStore } from "@/hooks/useProductivityStore";
+import { useSupabaseStore } from "@/hooks/useSupabaseStore";
 
 const Dashboard = () => {
-  const { getYearlyProgress, getDailyTarget, getTodayLog } = useProductivityStore();
+  const { getYearlyProgress, getDailyTarget, getTodayLog } = useSupabaseStore();
   
   const yearlyProgress = getYearlyProgress();
   const dailyTarget = getDailyTarget();
@@ -37,7 +37,7 @@ const Dashboard = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">
                 {yearlyProgress.completed.toFixed(0)}
@@ -49,6 +49,12 @@ const Dashboard = () => {
                 {yearlyProgress.goal}
               </div>
               <div className="text-xs text-muted-foreground">Goal</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-warning">
+                {yearlyProgress.expectedHours.toFixed(0)}
+              </div>
+              <div className="text-xs text-muted-foreground">Expected ({yearlyProgress.daysPassed} days)</div>
             </div>
           </div>
         </div>

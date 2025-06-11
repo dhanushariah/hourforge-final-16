@@ -4,24 +4,24 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useProductivityStore } from "@/hooks/useProductivityStore";
+import { useSupabaseStore } from "@/hooks/useSupabaseStore";
 
 const DailyLog = () => {
-  const { data, addDailyHours, getTodayLog } = useProductivityStore();
+  const { dailyLogs, addDailyHours, getTodayLog, getCurrentDateIST } = useSupabaseStore();
   const [hoursInput, setHoursInput] = useState("");
   const todayLog = getTodayLog();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const hours = parseFloat(hoursInput);
-    if (!isNaN(hours) && hours >= 0) {
-      const today = new Date().toISOString().split('T')[0];
+    if (!isNaN(hours) && hours >= 0 && hours <= 12) {
+      const today = getCurrentDateIST();
       addDailyHours(today, hours);
       setHoursInput("");
     }
   };
 
-  const recentLogs = data.dailyLogs
+  const recentLogs = dailyLogs
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 7);
 
@@ -50,8 +50,8 @@ const DailyLog = () => {
                 type="number"
                 step="0.1"
                 min="0"
-                max="24"
-                placeholder="Enter hours (e.g., 8.5)"
+                max="12"
+                placeholder="Enter hours (max 12)"
                 value={hoursInput}
                 onChange={(e) => setHoursInput(e.target.value)}
                 className="bg-background/50 border-border/50"
@@ -60,6 +60,9 @@ const DailyLog = () => {
                 Update
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Maximum 12 hours per day allowed
+            </p>
           </div>
         </form>
       </Card>
@@ -76,7 +79,7 @@ const DailyLog = () => {
           <div className="space-y-3">
             {recentLogs.map((log) => {
               const date = new Date(log.date);
-              const isToday = log.date === new Date().toISOString().split('T')[0];
+              const isToday = log.date === getCurrentDateIST();
               
               return (
                 <div

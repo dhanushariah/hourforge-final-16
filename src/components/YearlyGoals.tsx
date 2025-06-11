@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { useProductivityStore } from "@/hooks/useProductivityStore";
+import { Edit2, Save, X } from "lucide-react";
+import { useSupabaseStore } from "@/hooks/useSupabaseStore";
 
 const YearlyGoals = () => {
-  const { data, addYearlyGoal } = useProductivityStore();
+  const { yearlyGoals, addYearlyGoal, updateYearlyGoalHours } = useSupabaseStore();
   const [goalTitle, setGoalTitle] = useState("");
   const [goalDescription, setGoalDescription] = useState("");
   const [estimatedHours, setEstimatedHours] = useState("");
+  const [editingGoal, setEditingGoal] = useState<string | null>(null);
+  const [editHours, setEditHours] = useState("");
 
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +27,25 @@ const YearlyGoals = () => {
         setEstimatedHours("");
       }
     }
+  };
+
+  const handleEditHours = (goalId: string, currentHours: number) => {
+    setEditingGoal(goalId);
+    setEditHours(currentHours.toString());
+  };
+
+  const handleSaveHours = (goalId: string) => {
+    const hours = parseFloat(editHours);
+    if (!isNaN(hours) && hours >= 0) {
+      updateYearlyGoalHours(goalId, hours);
+    }
+    setEditingGoal(null);
+    setEditHours("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingGoal(null);
+    setEditHours("");
   };
 
   return (
@@ -76,16 +98,17 @@ const YearlyGoals = () => {
 
       {/* Goals List */}
       <div className="space-y-4">
-        {data.yearlyGoals.length === 0 ? (
+        {yearlyGoals.length === 0 ? (
           <Card className="p-8 bg-card/50 backdrop-blur-sm border-border/50">
             <div className="text-center text-muted-foreground">
               No yearly goals yet. Create your first goal above! 🎯
             </div>
           </Card>
         ) : (
-          data.yearlyGoals.map((goal) => {
-            const progress = Math.min(100, (goal.loggedHours / goal.estimatedHours) * 100);
-            const remainingHours = Math.max(0, goal.estimatedHours - goal.loggedHours);
+          yearlyGoals.map((goal) => {
+            const progress = Math.min(100, (goal.logged_hours / goal.estimated_hours) * 100);
+            const remainingHours = Math.max(0, goal.estimated_hours - goal.logged_hours);
+            const isEditing = editingGoal === goal.id;
             
             return (
               <Card key={goal.id} className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
@@ -111,7 +134,7 @@ const YearlyGoals = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Progress</span>
-                      <span>{goal.loggedHours.toFixed(1)} / {goal.estimatedHours}h</span>
+                      <span>{goal.logged_hours.toFixed(1)} / {goal.estimated_hours}h</span>
                     </div>
                     <Progress value={progress} className="h-2" />
                     <div className="text-xs text-muted-foreground text-center">
@@ -124,15 +147,55 @@ const YearlyGoals = () => {
 
                   <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
                     <div className="text-center">
-                      <div className="text-lg font-bold text-primary">
-                        {goal.loggedHours.toFixed(1)}
+                      <div className="flex items-center justify-center gap-1">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={editHours}
+                              onChange={(e) => setEditHours(e.target.value)}
+                              className="w-16 h-6 text-sm text-center p-1"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveHours(goal.id!)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Save size={12} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X size={12} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-lg font-bold text-primary">
+                              {goal.logged_hours.toFixed(1)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditHours(goal.id!, goal.logged_hours)}
+                              className="h-6 w-6 p-0 ml-1"
+                            >
+                              <Edit2 size={12} />
+                            </Button>
+                          </>
+                        )}
                       </div>
                       <div className="text-xs text-muted-foreground">Logged</div>
                     </div>
                     
                     <div className="text-center">
                       <div className="text-lg font-bold">
-                        {goal.estimatedHours}
+                        {goal.estimated_hours}
                       </div>
                       <div className="text-xs text-muted-foreground">Target</div>
                     </div>

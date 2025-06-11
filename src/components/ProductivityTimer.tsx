@@ -1,26 +1,22 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useTimer } from "@/hooks/useTimer";
-import { useProductivityStore } from "@/hooks/useProductivityStore";
-import { useEffect } from "react";
+import { useEnhancedTimer } from "@/hooks/useEnhancedTimer";
+import { useSupabaseStore } from "@/hooks/useSupabaseStore";
+import { Play, Pause, Square, RotateCcw } from "lucide-react";
 
 const ProductivityTimer = () => {
-  const timer = useTimer();
-  const { addDailyHours, getTodayLog } = useProductivityStore();
+  const timer = useEnhancedTimer();
+  const { getTodayLog } = useSupabaseStore();
   const todayLog = getTodayLog();
 
-  // Auto-save timer hours when stopping
-  useEffect(() => {
-    if (!timer.isRunning && timer.seconds > 0) {
-      const hoursToAdd = timer.hours;
-      if (hoursToAdd > 0) {
-        const today = new Date().toISOString().split('T')[0];
-        addDailyHours(today, todayLog.hours + hoursToAdd);
-        timer.reset();
-      }
-    }
-  }, [timer.isRunning]);
+  // Calculate progress ring
+  const todayHours = todayLog.hours;
+  const dailyGoal = 12;
+  const progressPercentage = Math.min(100, (todayHours / dailyGoal) * 100);
+  const circumference = 2 * Math.PI * 90; // radius = 90
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
 
   return (
     <div className="space-y-6 p-4">
@@ -29,35 +25,115 @@ const ProductivityTimer = () => {
         <p className="text-muted-foreground">Track your focused work time</p>
       </div>
 
-      {/* Timer Display */}
+      {/* Timer Display with Progress Ring */}
       <Card className="p-8 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
         <div className="text-center space-y-6">
-          <div className="text-6xl font-bold tracking-tight gradient-bg bg-clip-text text-transparent">
-            {timer.formattedTime}
+          {/* Progress Ring around Timer */}
+          <div className="relative inline-flex items-center justify-center">
+            <svg className="w-48 h-48 transform -rotate-90" viewBox="0 0 200 200">
+              {/* Background circle */}
+              <circle
+                cx="100"
+                cy="100"
+                r="90"
+                fill="transparent"
+                stroke="currentColor"
+                strokeWidth="8"
+                className="text-muted-foreground/20"
+              />
+              {/* Progress circle */}
+              <circle
+                cx="100"
+                cy="100"
+                r="90"
+                fill="transparent"
+                stroke="url(#gradient)"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={strokeDasharray}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-300 ease-in-out"
+              />
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" className="stop-color-primary" />
+                  <stop offset="100%" className="stop-color-accent" />
+                </linearGradient>
+              </defs>
+            </svg>
+            
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-4xl font-bold tracking-tight gradient-bg bg-clip-text text-transparent">
+                {timer.formattedTime}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                {timer.isRunning ? 'Running' : timer.isPaused ? 'Paused' : 'Ready'}
+              </div>
+            </div>
           </div>
           
-          <div className="flex justify-center space-x-4">
-            <Button
-              onClick={timer.toggle}
-              size="lg"
-              className={`px-8 py-3 rounded-2xl transition-all duration-300 ${
-                timer.isRunning 
-                  ? 'bg-destructive hover:bg-destructive/90' 
-                  : 'gradient-bg hover:opacity-90'
-              }`}
-            >
-              {timer.isRunning ? 'Stop Timer' : 'Start Timer'}
-            </Button>
-            
-            {timer.seconds > 0 && (
+          <div className="flex justify-center space-x-3">
+            {timer.isIdle && (
               <Button
-                onClick={timer.reset}
-                variant="outline"
+                onClick={timer.start}
                 size="lg"
-                className="px-8 py-3 rounded-2xl"
+                className="px-8 py-3 rounded-2xl gradient-bg hover:opacity-90 flex items-center gap-2"
               >
-                Reset
+                <Play size={20} />
+                Start Timer
               </Button>
+            )}
+            
+            {timer.isRunning && (
+              <>
+                <Button
+                  onClick={timer.pause}
+                  size="lg"
+                  variant="outline"
+                  className="px-8 py-3 rounded-2xl flex items-center gap-2"
+                >
+                  <Pause size={20} />
+                  Pause
+                </Button>
+                <Button
+                  onClick={timer.end}
+                  size="lg"
+                  className="px-8 py-3 rounded-2xl bg-destructive hover:bg-destructive/90 flex items-center gap-2"
+                >
+                  <Square size={20} />
+                  End & Save
+                </Button>
+              </>
+            )}
+            
+            {timer.isPaused && (
+              <>
+                <Button
+                  onClick={timer.resume}
+                  size="lg"
+                  className="px-8 py-3 rounded-2xl gradient-bg hover:opacity-90 flex items-center gap-2"
+                >
+                  <Play size={20} />
+                  Resume
+                </Button>
+                <Button
+                  onClick={timer.end}
+                  size="lg"
+                  className="px-8 py-3 rounded-2xl bg-destructive hover:bg-destructive/90 flex items-center gap-2"
+                >
+                  <Square size={20} />
+                  End & Save
+                </Button>
+                <Button
+                  onClick={timer.reset}
+                  size="lg"
+                  variant="outline"
+                  className="px-8 py-3 rounded-2xl flex items-center gap-2"
+                >
+                  <RotateCcw size={20} />
+                  Reset
+                </Button>
+              </>
             )}
           </div>
 
@@ -72,28 +148,37 @@ const ProductivityTimer = () => {
       {/* Session Info */}
       <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Session Info</h3>
+          <h3 className="text-lg font-semibold">Today's Progress</h3>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 bg-secondary/50 rounded-xl">
               <div className="text-xl font-bold text-primary">
-                {timer.hours.toFixed(2)}
+                {timer.hours.toFixed(2)}h
               </div>
               <div className="text-xs text-muted-foreground">Current Session</div>
             </div>
             
             <div className="text-center p-4 bg-secondary/50 rounded-xl">
               <div className="text-xl font-bold">
-                {todayLog.hours.toFixed(1)}
+                {todayLog.hours.toFixed(1)}h
               </div>
               <div className="text-xs text-muted-foreground">Today's Total</div>
+            </div>
+            
+            <div className="text-center p-4 bg-secondary/50 rounded-xl">
+              <div className="text-xl font-bold text-accent">
+                {Math.max(0, dailyGoal - todayLog.hours).toFixed(1)}h
+              </div>
+              <div className="text-xs text-muted-foreground">Remaining</div>
             </div>
           </div>
 
           <div className="text-center text-sm text-muted-foreground">
-            {timer.isRunning 
-              ? "Hours will be automatically logged when you stop the timer"
-              : "Start the timer to begin tracking your productive hours"
+            {progressPercentage >= 100 
+              ? "🎉 Daily goal achieved! Excellent work!"
+              : timer.isRunning 
+                ? "Hours will be automatically logged when you end the timer"
+                : "Start the timer to begin tracking your productive hours"
             }
           </div>
         </div>
