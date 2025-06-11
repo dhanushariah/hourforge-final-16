@@ -42,7 +42,7 @@ export const useSupabaseStore = () => {
       setHasError(false);
 
       // Load all data in parallel with error handling for each
-      const promises = [
+      const [logsData, goalsData, tasksData, sessionsData] = await Promise.all([
         supabase
           .from('daily_logs')
           .select('*')
@@ -98,9 +98,7 @@ export const useSupabaseStore = () => {
             }
             return data || [];
           }),
-      ];
-
-      const [logsData, goalsData, tasksData, sessionsData] = await Promise.all(promises);
+      ]);
       
       // Group tasks by date and attach to daily logs
       const groupedTasks = tasksData.reduce((acc: { [key: string]: Task[] }, task: Task) => {
@@ -195,7 +193,7 @@ export const useSupabaseStore = () => {
   };
 
   // Yearly goals functions
-  const addYearlyGoal = async (title: string, description: string, estimatedHours: number) => {
+  const addYearlyGoal = async (title: string, description: string) => {
     if (!user) return;
 
     const { error } = await supabase
@@ -204,7 +202,7 @@ export const useSupabaseStore = () => {
         user_id: user.id,
         title,
         description,
-        estimated_hours: estimatedHours,
+        estimated_hours: 0,
         logged_hours: 0,
         year: new Date().getFullYear()
       }]);
@@ -216,6 +214,22 @@ export const useSupabaseStore = () => {
     }
 
     toast.success('Yearly goal added successfully! 🎯');
+    await loadUserData();
+  };
+
+  const updateYearlyGoal = async (goalId: string, title: string, description: string) => {
+    const { error } = await supabase
+      .from('yearly_goals')
+      .update({ title, description })
+      .eq('id', goalId);
+
+    if (error) {
+      console.error('Error updating yearly goal:', error);
+      toast.error('Failed to update goal');
+      return;
+    }
+
+    toast.success('Goal updated! ✅');
     await loadUserData();
   };
 
@@ -232,6 +246,22 @@ export const useSupabaseStore = () => {
     }
 
     toast.success('Goal hours updated! ✅');
+    await loadUserData();
+  };
+
+  const deleteYearlyGoal = async (goalId: string) => {
+    const { error } = await supabase
+      .from('yearly_goals')
+      .delete()
+      .eq('id', goalId);
+
+    if (error) {
+      console.error('Error deleting yearly goal:', error);
+      toast.error('Failed to delete goal');
+      return;
+    }
+
+    toast.success('Goal deleted! 🗑️');
     await loadUserData();
   };
 
@@ -273,7 +303,9 @@ export const useSupabaseStore = () => {
     
     // Yearly goals functions
     addYearlyGoal,
+    updateYearlyGoal,
     updateYearlyGoalHours,
+    deleteYearlyGoal,
     
     // Calculations
     getCurrentDateIST,

@@ -25,6 +25,7 @@ export const usePersistentTimer = () => {
   const { showNotification } = useTimerNotifications();
 
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [pauseStartTime, setPauseStartTime] = useState<number | null>(null);
 
   // Load persisted timer state on mount
   useEffect(() => {
@@ -37,6 +38,7 @@ export const usePersistentTimer = () => {
       if (storedState.state === 'paused' && storedState.lastPauseTime) {
         const pauseTimeSinceLastPause = Date.now() - storedState.lastPauseTime;
         currentPausedDuration += pauseTimeSinceLastPause;
+        setPauseStartTime(storedState.lastPauseTime);
       }
 
       setStartTime(storedState.realStartTime);
@@ -46,14 +48,16 @@ export const usePersistentTimer = () => {
     }
   }, [loadTimerState, setStartTime, setPausedDuration, setSessionId, setState]);
 
-  // Update current time every second
+  // Update current time every second only when running
   useEffect(() => {
+    if (state !== 'running') return;
+    
     const interval = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [state]);
 
   // Save timer state whenever it changes
   useEffect(() => {
@@ -64,11 +68,11 @@ export const usePersistentTimer = () => {
         totalPausedDuration: pausedDuration,
         state,
         date: getCurrentDateIST(),
-        lastPauseTime: state === 'paused' ? currentTime : undefined,
+        lastPauseTime: state === 'paused' ? (pauseStartTime || currentTime) : undefined,
       };
       saveTimerState(timerData);
     }
-  }, [state, startTime, pausedDuration, sessionId, currentTime, saveTimerState, getCurrentDateIST]);
+  }, [state, startTime, pausedDuration, sessionId, currentTime, pauseStartTime, saveTimerState, getCurrentDateIST]);
 
   const elapsedSeconds = calculateElapsedSeconds(startTime, currentTime, pausedDuration, state);
   const hours = calculateHours(elapsedSeconds);
@@ -84,6 +88,7 @@ export const usePersistentTimer = () => {
       const startTimestamp = Date.now();
       setStartTime(startTimestamp);
       setPausedDuration(0);
+      setPauseStartTime(null);
       setSessionId(session.id);
       setState('running');
       
@@ -96,24 +101,37 @@ export const usePersistentTimer = () => {
 
   const pause = useCallback(() => {
     if (state === 'running') {
+      const pauseTime = Date.now();
+      setPauseStartTime(pauseTime);
       setState('paused');
       showNotification('pause', 'Timer paused. Take a well-deserved break! ☕');
     }
   }, [state, setState, showNotification]);
 
   const resume = useCallback(() => {
-    if (state === 'paused') {
+    if (state === 'paused' && pauseStartTime) {
+      const resumeTime = Date.now();
+      const pauseLength = resumeTime - pauseStartTime;
+      setPausedDuration(prev => prev + pauseLength);
+      setPauseStartTime(null);
       setState('running');
       showNotification('resume', 'Timer resumed! Back to productive work 💪');
     }
-  }, [state, setState, showNotification]);
+  }, [state, pauseStartTime, setState, setPausedDuration, showNotification]);
 
   const end = useCallback(async () => {
     if (!sessionId || (state !== 'running' && state !== 'paused')) return;
 
     try {
       const endTime = new Date().toISOString();
-      const totalElapsed = calculateElapsedSeconds(startTime, Date.now(), pausedDuration, 'idle');
+      let finalPausedDuration = pausedDuration;
+      
+      // If paused, add current pause duration
+      if (state === 'paused' && pauseStartTime) {
+        finalPausedDuration += Date.now() - pauseStartTime;
+      }
+      
+      const totalElapsed = calculateElapsedSeconds(startTime, Date.now(), finalPausedDuration, 'idle');
       
       await updateTimerSession(sessionId, endTime, totalElapsed);
       
@@ -132,6 +150,7 @@ export const usePersistentTimer = () => {
       setState('idle');
       setStartTime(0);
       setPausedDuration(0);
+      setPauseStartTime(null);
       setSessionId(null);
       clearTimerState();
       
@@ -144,6 +163,7 @@ export const usePersistentTimer = () => {
     state,
     startTime,
     pausedDuration,
+    pauseStartTime,
     calculateElapsedSeconds,
     calculateHours,
     updateTimerSession,
@@ -161,6 +181,7 @@ export const usePersistentTimer = () => {
     setState('idle');
     setStartTime(0);
     setPausedDuration(0);
+    setPauseStartTime(null);
     setSessionId(null);
     clearTimerState();
     showNotification('reset', 'Timer reset. Ready for your next session! 🔄');

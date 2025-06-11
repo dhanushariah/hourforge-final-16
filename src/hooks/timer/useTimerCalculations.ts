@@ -15,6 +15,7 @@ export const useTimerCalculations = () => {
     if (state === 'running') {
       return Math.max(0, Math.floor((currentTime - startTime - pausedDuration) / 1000));
     } else if (state === 'paused') {
+      // When paused, don't count current time, use the time when it was paused
       return Math.max(0, Math.floor((currentTime - startTime - pausedDuration) / 1000));
     }
     
