@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useSupabaseStore } from "@/hooks/useSupabaseStore";
-import { LogOut, Moon, Sun, User, Target, Calendar, TrendingUp, Crown, Star, Zap } from "lucide-react";
+import { LogOut, Moon, Sun, User, Target, Calendar, TrendingUp, Crown, Star, Zap, Sparkles } from "lucide-react";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -72,44 +72,77 @@ const Profile = () => {
         </div>
       </Card>
 
-      {/* Upgrade to Pro Section */}
-      <Card className="p-6 relative overflow-hidden border-2 border-transparent bg-gradient-to-br from-yellow-400/20 via-amber-500/20 to-orange-600/20 hover-lift">
-        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 via-amber-500/10 to-orange-600/10 animate-pulse"></div>
-        <div className="relative z-10 text-center space-y-4">
-          <div className="flex items-center justify-center space-x-2">
-            <Crown size={28} className="text-yellow-500" />
-            <h3 className="text-xl font-bold bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 bg-clip-text text-transparent">
-              Upgrade to Pro
-            </h3>
-            <Crown size={28} className="text-yellow-500" />
+      {/* Upgraded "Upgrade to Pro" Section */}
+      <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-orange-950/20 hover-lift shadow-2xl">
+        {/* Animated background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/20 via-amber-500/30 to-orange-600/20 animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-yellow-300/10 to-amber-400/20"></div>
+        
+        {/* Content */}
+        <div className="relative z-10 p-6 space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center space-x-3">
+              <div className="p-2 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 shadow-lg">
+                <Crown size={24} className="text-white" />
+              </div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-amber-600 via-yellow-500 to-orange-500 bg-clip-text text-transparent">
+                Upgrade to Pro
+              </h3>
+              <div className="p-2 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg">
+                <Sparkles size={24} className="text-white" />
+              </div>
+            </div>
+            
+            <p className="text-muted-foreground font-medium">
+              Unlock premium features and supercharge your productivity journey
+            </p>
           </div>
           
-          <p className="text-sm text-muted-foreground">
-            Unlock premium features and supercharge your productivity
-          </p>
-          
-          <div className="grid grid-cols-3 gap-3 my-4">
-            <div className="text-center p-3 rounded-xl bg-gradient-to-br from-yellow-400/20 to-amber-500/20">
-              <Star size={20} className="text-yellow-500 mx-auto mb-1" />
-              <div className="text-xs font-medium text-foreground">Unlimited Goals</div>
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-yellow-400/20 to-amber-500/30 border border-yellow-300/20 backdrop-blur-sm">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
+                <Star size={24} className="text-white" />
+              </div>
+              <div className="text-sm font-semibold text-foreground">Unlimited Goals</div>
+              <div className="text-xs text-muted-foreground mt-1">Set as many yearly goals as you need</div>
             </div>
-            <div className="text-center p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-600/20">
-              <Zap size={20} className="text-amber-500 mx-auto mb-1" />
-              <div className="text-xs font-medium text-foreground">Advanced Analytics</div>
+            
+            <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-600/30 border border-amber-300/20 backdrop-blur-sm">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+                <Zap size={24} className="text-white" />
+              </div>
+              <div className="text-sm font-semibold text-foreground">Advanced Analytics</div>
+              <div className="text-xs text-muted-foreground mt-1">Deep insights into your productivity</div>
             </div>
-            <div className="text-center p-3 rounded-xl bg-gradient-to-br from-orange-600/20 to-yellow-400/20">
-              <Target size={20} className="text-orange-500 mx-auto mb-1" />
-              <div className="text-xs font-medium text-foreground">Priority Support</div>
+            
+            <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-orange-500/20 to-yellow-400/30 border border-orange-300/20 backdrop-blur-sm">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-orange-500 to-yellow-400 flex items-center justify-center shadow-lg">
+                <Target size={24} className="text-white" />
+              </div>
+              <div className="text-sm font-semibold text-foreground">Priority Support</div>
+              <div className="text-xs text-muted-foreground mt-1">Get help when you need it most</div>
             </div>
           </div>
           
-          <Button className="w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 hover:from-yellow-500 hover:via-amber-600 hover:to-orange-700 text-black font-bold text-lg py-6 shadow-lg transform hover:scale-105 transition-all duration-200">
-            <Crown size={20} className="mr-2" />
-            Upgrade Now - $9.99/month
-          </Button>
-          
-          <div className="text-xs text-muted-foreground">
-            ✨ 30-day money-back guarantee
+          {/* CTA Button */}
+          <div className="space-y-4">
+            <Button className="w-full bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600 text-white font-bold text-base sm:text-lg py-6 sm:py-8 shadow-2xl transform hover:scale-[1.02] transition-all duration-300 border-0">
+              <Crown size={22} className="mr-3" />
+              <span className="flex-1 text-center">
+                Upgrade Now - $4.99/month
+              </span>
+            </Button>
+            
+            <div className="text-center space-y-1">
+              <div className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                ✨ 30-day money-back guarantee
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Cancel anytime • No hidden fees
+              </div>
+            </div>
           </div>
         </div>
       </Card>

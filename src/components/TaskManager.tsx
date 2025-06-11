@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +12,7 @@ const TaskManager = () => {
   const [newTask, setNewTask] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const todayLog = getTodayLog();
   
@@ -26,7 +26,7 @@ const TaskManager = () => {
     return () => window.removeEventListener('timer-saved', handleTimerSaved);
   }, [loadUserData]);
   
-  // Get tomorrow's tasks from dailyLogs
+  // Get tomorrow's tasks from dailyLogs with proper date handling
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDate = tomorrow.toISOString().split('T')[0];
@@ -40,13 +40,17 @@ const TaskManager = () => {
   const handleAddTask = async (targetDate?: string) => {
     if (!newTask.trim()) return;
     
+    setIsRefreshing(true);
     try {
       await addTask(newTask.trim(), undefined, targetDate);
       setNewTask("");
       toast.success("Task added successfully! ✅");
+      // Force immediate refresh
       await loadUserData();
     } catch (error) {
       toast.error("Failed to add task");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -74,21 +78,28 @@ const TaskManager = () => {
   };
 
   const handleMoveToTomorrow = async (taskId: string) => {
+    setIsRefreshing(true);
     try {
       await moveTaskToTomorrow(taskId);
       toast.success("Task moved to tomorrow ✅");
       await loadUserData();
     } catch (error) {
       toast.error("Failed to move task");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    setIsRefreshing(true);
     try {
       await deleteTask(taskId);
       toast.success("Task deleted successfully! 🗑️");
+      await loadUserData();
     } catch (error) {
       toast.error("Failed to delete task");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -124,6 +135,7 @@ const TaskManager = () => {
                 onChange={setNewTask}
                 onAdd={() => handleAddTask()}
                 placeholder="Add a new task..."
+                disabled={isRefreshing}
               />
 
               <TaskList
@@ -159,6 +171,7 @@ const TaskManager = () => {
                 onChange={setNewTask}
                 onAdd={() => handleAddTask('tomorrow')}
                 placeholder="Add a task for tomorrow..."
+                disabled={isRefreshing}
               />
 
               <TaskList

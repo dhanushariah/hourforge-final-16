@@ -82,9 +82,16 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-6 bg-card/50 backdrop-blur-sm border-border/50">
         <div className="text-center space-y-2 mb-6">
-          <h1 className="text-3xl font-bold gradient-text">
-            HourForge
-          </h1>
+          <div className="flex items-center justify-center space-x-3 mb-2">
+            <img 
+              src="/lovable-uploads/c7dec565-583e-4c78-a5c4-7fcad5b813cc.png" 
+              alt="HourForge Logo" 
+              className="w-12 h-12 object-contain"
+            />
+            <h1 className="text-3xl font-bold gradient-text">
+              HourForge
+            </h1>
+          </div>
           <p className="text-muted-foreground">
             {isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>
