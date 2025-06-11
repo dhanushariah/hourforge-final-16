@@ -30,7 +30,9 @@
     --ring: 263 70% 50%;
     --radius: 1rem;
     --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
     --warning: 38 92% 50%;
+    --warning-foreground: 222.2 84% 4.9%;
   }
 
   .dark {
@@ -55,7 +57,9 @@
     --input: 240 10% 12%;
     --ring: 263 70% 50%;
     --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
     --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
   }
 }
 
@@ -96,6 +100,8 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
     overflow: hidden;
+    color: hsl(var(--primary-foreground));
+    transition: all 0.3s ease;
   }
 
   .glossy-gradient::before {
@@ -112,8 +118,53 @@
     transition: left 0.5s ease;
   }
 
+  .glossy-gradient:hover {
+    transform: translateY(-1px);
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+
   .glossy-gradient:hover::before {
     left: 100%;
+  }
+
+  .glossy-gradient:active {
+    transform: translateY(0px);
+    box-shadow: 
+      0 2px 10px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  /* Specific glossy variants for different button types */
+  .bg-success.glossy-gradient {
+    background: linear-gradient(135deg, 
+      hsl(var(--success)) 0%, 
+      hsl(var(--success) / 0.9) 25%, 
+      hsl(var(--success) / 1.1) 50%, 
+      hsl(var(--success) / 0.9) 75%, 
+      hsl(var(--success)) 100%);
+    color: hsl(var(--success-foreground));
+  }
+
+  .border-destructive\/30.glossy-gradient {
+    background: linear-gradient(135deg, 
+      rgba(239, 68, 68, 0.1) 0%, 
+      rgba(239, 68, 68, 0.2) 50%, 
+      rgba(239, 68, 68, 0.1) 100%);
+    border-color: hsl(var(--destructive) / 0.3);
+    color: hsl(var(--destructive));
+  }
+
+  .border-primary\/30.glossy-gradient {
+    background: linear-gradient(135deg, 
+      rgba(139, 92, 246, 0.1) 0%, 
+      rgba(139, 92, 246, 0.2) 50%, 
+      rgba(139, 92, 246, 0.1) 100%);
+    border-color: hsl(var(--primary) / 0.3);
+    color: hsl(var(--primary));
   }
   
   .glass-effect {

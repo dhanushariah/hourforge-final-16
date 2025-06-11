@@ -103,6 +103,20 @@ export const useSupabaseStore = () => {
         tasks: tasksByDate[log.date] || []
       })) || [];
 
+      // Also include days that have tasks but no logged hours
+      Object.keys(tasksByDate).forEach(date => {
+        if (!logsWithTasks.find(log => log.date === date)) {
+          logsWithTasks.push({
+            date,
+            hours: 0,
+            tasks: tasksByDate[date]
+          });
+        }
+      });
+
+      // Sort by date descending
+      logsWithTasks.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
       setDailyLogs(logsWithTasks);
 
       // Load yearly goals
@@ -163,6 +177,9 @@ export const useSupabaseStore = () => {
         }
       });
 
+      // Reload data to ensure sync
+      await loadUserData();
+
     } catch (error: any) {
       console.error('Error saving hours:', error);
       toast({
@@ -196,23 +213,8 @@ export const useSupabaseStore = () => {
 
       if (error) throw error;
 
-      // Update local state for today's tasks only
-      if (taskDate === today) {
-        setDailyLogs(prev => {
-          const existingIndex = prev.findIndex(log => log.date === today);
-          if (existingIndex >= 0) {
-            const updated = [...prev];
-            updated[existingIndex].tasks.push(data);
-            return updated;
-          } else {
-            return [{
-              date: today,
-              hours: 0,
-              tasks: [data]
-            }, ...prev];
-          }
-        });
-      }
+      // Reload data to ensure proper sync
+      await loadUserData();
 
     } catch (error: any) {
       console.error('Error adding task:', error);
@@ -240,13 +242,8 @@ export const useSupabaseStore = () => {
 
       if (error) throw error;
 
-      // Remove from today's local state
-      setDailyLogs(prev =>
-        prev.map(log => ({
-          ...log,
-          tasks: log.tasks.filter(t => t.id !== taskId)
-        }))
-      );
+      // Reload data to ensure proper sync
+      await loadUserData();
 
       toast({
         title: "Task moved",
@@ -387,7 +384,7 @@ export const useSupabaseStore = () => {
     return {
       completed: totalHoursInYear,
       remaining: Math.max(0, yearlyGoal - totalHoursInYear),
-      percentage: actualPercentage, // This is the key fix - ensure it's calculated correctly
+      percentage: actualPercentage,
       goal: yearlyGoal,
       expectedHours,
       daysPassed,
@@ -427,6 +424,7 @@ export const useSupabaseStore = () => {
     getYearlyProgress,
     getDailyTarget,
     getCurrentDateIST,
+    loadUserData,
     YEARLY_GOAL
   };
 };

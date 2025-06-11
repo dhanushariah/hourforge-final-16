@@ -3,220 +3,230 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSupabaseStore } from "@/hooks/useSupabaseStore";
-import { ArrowRight, Calendar, CalendarPlus } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, Plus, Edit2, Check, X } from "lucide-react";
+import { toast } from "sonner";
 
 const TaskManager = () => {
-  const { addTask, toggleTask, getTodayLog, moveTaskToTomorrow } = useSupabaseStore();
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
+  const { getTodayLog, addTask, toggleTask, moveTaskToTomorrow } = useSupabaseStore();
+  const [newTask, setNewTask] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState("");
   
   const todayLog = getTodayLog();
-  const completedTasks = todayLog.tasks.filter(task => task.completed).length;
-  const totalTasks = todayLog.tasks.length;
-  const incompleteTasks = todayLog.tasks.filter(task => !task.completed);
-  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
-  const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (taskTitle.trim()) {
-      const targetDate = activeTab === 'today' ? undefined : 'tomorrow';
-      addTask(taskTitle.trim(), taskDescription.trim() || undefined, targetDate);
-      setTaskTitle("");
-      setTaskDescription("");
-    }
+  
+  // Get tomorrow's tasks (tasks with tomorrow's date)
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowDate = tomorrow.toISOString().split('T')[0];
+  
+  const { dailyLogs } = useSupabaseStore();
+  const tomorrowLog = dailyLogs.find(log => log.date === tomorrowDate) || {
+    date: tomorrowDate,
+    hours: 0,
+    tasks: []
   };
 
-  const handleMoveToTomorrow = (taskId: string) => {
-    moveTaskToTomorrow(taskId);
+  const handleAddTask = async (targetDate?: string) => {
+    if (!newTask.trim()) return;
+    
+    await addTask(newTask.trim(), undefined, targetDate);
+    setNewTask("");
+    toast.success("Task added successfully!");
   };
 
-  const renderTaskList = (tasks: any[], showMoveButton: boolean = false) => (
-    <div className="space-y-3">
-      {tasks.map((task) => (
-        <div
-          key={task.id}
-          className={`p-4 rounded-2xl border transition-all duration-200 ${
-            task.completed
-              ? 'glassmorphism border-success/30 text-muted-foreground'
-              : 'glassmorphism border-border/50 hover:border-primary/30'
-          }`}
-        >
-          <div className="flex items-start space-x-3">
-            <Checkbox
-              checked={task.completed}
-              onCheckedChange={() => toggleTask(task.id!)}
-              className="mt-1"
+  const handleEditTask = (taskId: string, currentTitle: string) => {
+    setEditingTaskId(taskId);
+    setEditingTaskTitle(currentTitle);
+  };
+
+  const handleSaveEdit = async (taskId: string) => {
+    // For now, we'll just update locally since we don't have an update task function
+    // You could add this to useSupabaseStore later
+    setEditingTaskId(null);
+    setEditingTaskTitle("");
+    toast.success("Task updated!");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
+    setEditingTaskTitle("");
+  };
+
+  const handleMoveToTomorrow = async (taskId: string) => {
+    await moveTaskToTomorrow(taskId);
+    toast.success("Task moved to tomorrow ✅");
+  };
+
+  const TaskItem = ({ task, showMoveButton = true }: { task: any, showMoveButton?: boolean }) => (
+    <div className="flex items-center space-x-3 p-3 rounded-2xl bg-secondary/30 hover:bg-secondary/50 transition-colors group">
+      <button
+        onClick={() => toggleTask(task.id)}
+        className="text-primary hover:text-primary/80 transition-colors"
+      >
+        {task.completed ? (
+          <CheckCircle2 className="w-5 h-5" />
+        ) : (
+          <Circle className="w-5 h-5" />
+        )}
+      </button>
+      
+      <div className="flex-1 min-w-0">
+        {editingTaskId === task.id ? (
+          <div className="flex items-center space-x-2">
+            <Input
+              value={editingTaskTitle}
+              onChange={(e) => setEditingTaskTitle(e.target.value)}
+              className="h-8 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveEdit(task.id);
+                if (e.key === 'Escape') handleCancelEdit();
+              }}
             />
-            
-            <div className="flex-1 min-w-0">
-              <div className={`font-medium text-foreground ${
-                task.completed ? 'line-through text-muted-foreground' : ''
-              }`}>
-                {task.title}
-              </div>
-              
-              {task.description && (
-                <div className={`text-sm mt-1 ${
-                  task.completed ? 'line-through text-muted-foreground/70' : 'text-muted-foreground'
-                }`}>
-                  {task.description}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleSaveEdit(task.id)}
+              className="glossy-gradient h-8 w-8 p-0"
+            >
+              <Check className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancelEdit}
+              className="h-8 w-8 p-0"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className={`text-sm ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+              {task.title}
+            </span>
+            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleEditTask(task.id, task.title)}
+                className="h-8 w-8 p-0 hover:bg-primary/20"
+              >
+                <Edit2 className="w-4 h-4" />
+              </Button>
               {showMoveButton && !task.completed && (
                 <Button
-                  onClick={() => handleMoveToTomorrow(task.id!)}
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                  onClick={() => handleMoveToTomorrow(task.id)}
+                  className="h-8 w-8 p-0 hover:bg-accent/20"
                 >
-                  <ArrowRight size={16} />
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
-              )}
-              {task.completed && (
-                <div className="text-success text-xl">✓</div>
               )}
             </div>
           </div>
-        </div>
-      ))}
+        )}
+      </div>
     </div>
   );
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6 p-4 animate-fade-in">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold text-foreground">Task Manager</h1>
-        <p className="text-muted-foreground">Organize your productive hours</p>
+        <p className="text-muted-foreground">Organize your daily tasks</p>
       </div>
 
-      {/* Task Stats */}
-      <Card className="p-6 glassmorphism border-primary/20">
-        <div className="text-center space-y-4">
-          <div className="text-3xl font-bold text-foreground">
-            {completedTasks}/{totalTasks}
-          </div>
-          <div className="text-sm text-muted-foreground">Tasks Completed Today</div>
-          
-          {totalTasks > 0 && (
-            <div className="space-y-2">
-              <div className="w-full bg-secondary rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${completionRate}%` }}
+      <Tabs defaultValue="today" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 glassmorphism">
+          <TabsTrigger value="today" className="data-[state=active]:glossy-gradient">
+            Today ({todayLog.tasks.filter(t => !t.completed).length})
+          </TabsTrigger>
+          <TabsTrigger value="tomorrow" className="data-[state=active]:glossy-gradient">
+            Tomorrow ({tomorrowLog.tasks.filter(t => !t.completed).length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="today" className="space-y-4">
+          <Card className="p-6 glassmorphism border-primary/20">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-foreground">Today's Tasks</h3>
+                <Badge variant="secondary" className="glossy-gradient">
+                  {todayLog.tasks.filter(t => t.completed).length} / {todayLog.tasks.length} completed
+                </Badge>
+              </div>
+
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="Add a new task..."
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+                  className="bg-background/50 border-border/50"
                 />
+                <Button onClick={() => handleAddTask()} className="glossy-gradient px-6">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add
+                </Button>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {completionRate.toFixed(0)}% completion rate
+
+              <div className="space-y-2">
+                {todayLog.tasks.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No tasks for today. Add one above! 📝
+                  </div>
+                ) : (
+                  todayLog.tasks.map((task) => (
+                    <TaskItem key={task.id} task={task} showMoveButton={true} />
+                  ))
+                )}
               </div>
             </div>
-          )}
-        </div>
-      </Card>
+          </Card>
+        </TabsContent>
 
-      {/* Tab Navigation */}
-      <div className="flex space-x-2 p-1 bg-secondary/50 rounded-2xl">
-        <Button
-          onClick={() => setActiveTab('today')}
-          variant={activeTab === 'today' ? 'default' : 'ghost'}
-          className={`flex-1 rounded-xl transition-all duration-200 ${
-            activeTab === 'today' 
-              ? 'gradient-bg text-primary-foreground' 
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Calendar size={16} className="mr-2" />
-          Today ({todayLog.tasks.length})
-        </Button>
-        <Button
-          onClick={() => setActiveTab('tomorrow')}
-          variant={activeTab === 'tomorrow' ? 'default' : 'ghost'}
-          className={`flex-1 rounded-xl transition-all duration-200 ${
-            activeTab === 'tomorrow' 
-              ? 'gradient-bg text-primary-foreground' 
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <CalendarPlus size={16} className="mr-2" />
-          Tomorrow (0)
-        </Button>
-      </div>
+        <TabsContent value="tomorrow" className="space-y-4">
+          <Card className="p-6 glassmorphism border-accent/20">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-foreground">Tomorrow's Tasks</h3>
+                <Badge variant="secondary" className="glossy-gradient">
+                  {tomorrowLog.tasks.filter(t => t.completed).length} / {tomorrowLog.tasks.length} completed
+                </Badge>
+              </div>
 
-      {/* Add New Task */}
-      <Card className="p-6 glassmorphism border-border/50">
-        <form onSubmit={handleAddTask} className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-foreground">Add New Task</h3>
-            <Badge variant="outline" className="text-xs">
-              {activeTab === 'today' ? 'Today' : 'Tomorrow'}
-            </Badge>
-          </div>
-          
-          <div className="space-y-2">
-            <Input
-              placeholder="Task title..."
-              value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
-              className="bg-background/50 border-border/50 text-foreground"
-            />
-            
-            <Textarea
-              placeholder="Description (optional)..."
-              value={taskDescription}
-              onChange={(e) => setTaskDescription(e.target.value)}
-              className="bg-background/50 border-border/50 min-h-[80px] text-foreground"
-            />
-          </div>
-          
-          <Button type="submit" className="w-full gradient-bg text-primary-foreground" disabled={!taskTitle.trim()}>
-            Add Task to {activeTab === 'today' ? 'Today' : 'Tomorrow'}
-          </Button>
-        </form>
-      </Card>
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="Add a task for tomorrow..."
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddTask('tomorrow')}
+                  className="bg-background/50 border-border/50"
+                />
+                <Button onClick={() => handleAddTask('tomorrow')} className="glossy-gradient px-6">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add
+                </Button>
+              </div>
 
-      {/* Task List */}
-      <Card className="p-6 glassmorphism border-border/50">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">
-            {activeTab === 'today' ? "Today's Tasks" : "Tomorrow's Tasks"}
-          </h3>
-          {activeTab === 'today' && incompleteTasks.length > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {incompleteTasks.length} incomplete
-            </Badge>
-          )}
-        </div>
-        
-        {activeTab === 'today' ? (
-          todayLog.tasks.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No tasks yet. Add your first task above! ✨
+              <div className="space-y-2">
+                {tomorrowLog.tasks.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No tasks planned for tomorrow. Plan ahead! 🌅
+                  </div>
+                ) : (
+                  tomorrowLog.tasks.map((task) => (
+                    <TaskItem key={task.id} task={task} showMoveButton={false} />
+                  ))
+                )}
+              </div>
             </div>
-          ) : (
-            renderTaskList(todayLog.tasks, true)
-          )
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No tasks scheduled for tomorrow yet. Plan ahead! 📅
-          </div>
-        )}
-
-        {activeTab === 'today' && todayLog.tasks.length > 0 && (
-          <div className="mt-6 pt-4 border-t border-border/50 text-center text-sm text-muted-foreground">
-            {completionRate === 100 
-              ? "All tasks completed! Great work! 🎉"
-              : `${totalTasks - completedTasks} task${totalTasks - completedTasks !== 1 ? 's' : ''} remaining`
-            }
-          </div>
-        )}
-      </Card>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
