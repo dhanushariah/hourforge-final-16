@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +28,11 @@ const TaskManager = () => {
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('today');
+  const [localTasks, setLocalTasks] = useState<any[]>([]);
   
   const todayLog = getTodayLog();
   
-  // Get tomorrow's tasks with better error handling
+  // Get tomorrow's date and tasks
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDate = tomorrow.toISOString().split('T')[0];
@@ -42,6 +42,15 @@ const TaskManager = () => {
     hours: 0,
     tasks: []
   };
+
+  // Update local tasks when data changes
+  useEffect(() => {
+    if (activeTab === 'today') {
+      setLocalTasks(todayLog.tasks);
+    } else {
+      setLocalTasks(tomorrowLog.tasks);
+    }
+  }, [todayLog.tasks, tomorrowLog.tasks, activeTab]);
 
   // Handle data refresh on mount and when there are errors
   useEffect(() => {
@@ -68,16 +77,37 @@ const TaskManager = () => {
     setIsRefreshing(true);
     try {
       console.log('TaskManager: Adding task', { title: newTask, targetDate });
+      
+      // Create optimistic update for immediate UI feedback
+      const tempTask = {
+        id: `temp-${Date.now()}`,
+        title: newTask.trim(),
+        completed: false,
+        date: targetDate === 'tomorrow' ? tomorrowDate : todayLog.date,
+        user_id: 'temp',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Add to local state immediately
+      if (targetDate === 'tomorrow' && activeTab === 'tomorrow') {
+        setLocalTasks(prev => [...prev, tempTask]);
+      } else if (!targetDate && activeTab === 'today') {
+        setLocalTasks(prev => [...prev, tempTask]);
+      }
+
       await addTask(newTask.trim(), undefined, targetDate);
       setNewTask("");
       toast.success("Task added successfully! ✅");
       
-      // Force reload to ensure consistency
+      // Force reload to ensure consistency and remove temp task
       await loadUserData();
       console.log('TaskManager: Task added and data refreshed');
     } catch (error) {
       console.error('TaskManager: Failed to add task', error);
       toast.error("Failed to add task");
+      // Remove optimistic update on error
+      setLocalTasks(prev => prev.filter(task => !task.id.startsWith('temp-')));
     } finally {
       setIsRefreshing(false);
     }
@@ -212,7 +242,7 @@ const TaskManager = () => {
               />
 
               <TaskList
-                tasks={todayLog.tasks}
+                tasks={activeTab === 'today' ? localTasks : todayLog.tasks}
                 showMoveButton={true}
                 editingTaskId={editingTaskId}
                 editingTaskTitle={editingTaskTitle}
@@ -248,7 +278,7 @@ const TaskManager = () => {
               />
 
               <TaskList
-                tasks={tomorrowLog.tasks}
+                tasks={activeTab === 'tomorrow' ? localTasks : tomorrowLog.tasks}
                 showMoveButton={false}
                 editingTaskId={editingTaskId}
                 editingTaskTitle={editingTaskTitle}
