@@ -60,7 +60,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
       <div className="max-w-md mx-auto">
-        {/* Single Header with Logo and Brand */}
         <div className="p-4 text-center">
           <div className="flex items-center justify-center space-x-3 mb-6">
             <img 
