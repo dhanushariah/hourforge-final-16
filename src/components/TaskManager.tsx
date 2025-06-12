@@ -28,7 +28,8 @@ const TaskManager = () => {
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('today');
-  const [localTasks, setLocalTasks] = useState<any[]>([]);
+  const [todayTasks, setTodayTasks] = useState<any[]>([]);
+  const [tomorrowTasks, setTomorrowTasks] = useState<any[]>([]);
   
   const todayLog = getTodayLog();
   
@@ -43,14 +44,12 @@ const TaskManager = () => {
     tasks: []
   };
 
-  // Update local tasks when data changes
+  // Synchronize local state with store data
   useEffect(() => {
-    if (activeTab === 'today') {
-      setLocalTasks(todayLog.tasks);
-    } else {
-      setLocalTasks(tomorrowLog.tasks);
-    }
-  }, [todayLog.tasks, tomorrowLog.tasks, activeTab]);
+    console.log('TaskManager: Synchronizing tasks with store data');
+    setTodayTasks(todayLog.tasks);
+    setTomorrowTasks(tomorrowLog.tasks);
+  }, [todayLog.tasks, tomorrowLog.tasks]);
 
   // Handle data refresh on mount and when there are errors
   useEffect(() => {
@@ -89,13 +88,16 @@ const TaskManager = () => {
         updated_at: new Date().toISOString()
       };
 
-      // Add to local state immediately
-      if (targetDate === 'tomorrow' && activeTab === 'tomorrow') {
-        setLocalTasks(prev => [...prev, tempTask]);
-      } else if (!targetDate && activeTab === 'today') {
-        setLocalTasks(prev => [...prev, tempTask]);
+      // Add to appropriate local state immediately for instant UI feedback
+      if (targetDate === 'tomorrow') {
+        setTomorrowTasks(prev => [...prev, tempTask]);
+        console.log('TaskManager: Added task to tomorrow local state', tempTask);
+      } else {
+        setTodayTasks(prev => [...prev, tempTask]);
+        console.log('TaskManager: Added task to today local state', tempTask);
       }
 
+      // Add to database
       await addTask(newTask.trim(), undefined, targetDate);
       setNewTask("");
       toast.success("Task added successfully! ✅");
@@ -106,8 +108,13 @@ const TaskManager = () => {
     } catch (error) {
       console.error('TaskManager: Failed to add task', error);
       toast.error("Failed to add task");
+      
       // Remove optimistic update on error
-      setLocalTasks(prev => prev.filter(task => !task.id.startsWith('temp-')));
+      if (targetDate === 'tomorrow') {
+        setTomorrowTasks(prev => prev.filter(task => !task.id.startsWith('temp-')));
+      } else {
+        setTodayTasks(prev => prev.filter(task => !task.id.startsWith('temp-')));
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -216,10 +223,10 @@ const TaskManager = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 glassmorphism">
           <TabsTrigger value="today" className="data-[state=active]:glossy-gradient text-sm font-poppins">
-            Today ({todayLog.tasks.filter(t => !t.completed).length})
+            Today ({todayTasks.filter(t => !t.completed).length})
           </TabsTrigger>
           <TabsTrigger value="tomorrow" className="data-[state=active]:glossy-gradient text-sm font-poppins">
-            Tomorrow ({tomorrowLog.tasks.filter(t => !t.completed).length})
+            Tomorrow ({tomorrowTasks.filter(t => !t.completed).length})
           </TabsTrigger>
         </TabsList>
 
@@ -229,7 +236,7 @@ const TaskManager = () => {
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <h3 className="text-base sm:text-lg font-semibold text-foreground font-poppins">Today's Tasks</h3>
                 <Badge variant="secondary" className="glossy-gradient self-start sm:self-auto font-poppins">
-                  {todayLog.tasks.filter(t => t.completed).length} / {todayLog.tasks.length} completed
+                  {todayTasks.filter(t => t.completed).length} / {todayTasks.length} completed
                 </Badge>
               </div>
 
@@ -242,7 +249,7 @@ const TaskManager = () => {
               />
 
               <TaskList
-                tasks={activeTab === 'today' ? localTasks : todayLog.tasks}
+                tasks={todayTasks}
                 showMoveButton={true}
                 editingTaskId={editingTaskId}
                 editingTaskTitle={editingTaskTitle}
@@ -265,7 +272,7 @@ const TaskManager = () => {
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <h3 className="text-base sm:text-lg font-semibold text-foreground font-poppins">Tomorrow's Tasks</h3>
                 <Badge variant="secondary" className="glossy-gradient self-start sm:self-auto font-poppins">
-                  {tomorrowLog.tasks.filter(t => t.completed).length} / {tomorrowLog.tasks.length} completed
+                  {tomorrowTasks.filter(t => t.completed).length} / {tomorrowTasks.length} completed
                 </Badge>
               </div>
 
@@ -278,7 +285,7 @@ const TaskManager = () => {
               />
 
               <TaskList
-                tasks={activeTab === 'tomorrow' ? localTasks : tomorrowLog.tasks}
+                tasks={tomorrowTasks}
                 showMoveButton={false}
                 editingTaskId={editingTaskId}
                 editingTaskTitle={editingTaskTitle}
