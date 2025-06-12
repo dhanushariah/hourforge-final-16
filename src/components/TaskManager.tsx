@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,28 +7,32 @@ import { useSupabaseStore } from "@/hooks/useSupabaseStore";
 import { toast } from "sonner";
 import { TaskInput } from "./tasks/TaskInput";
 import { TaskList } from "./tasks/TaskList";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 const TaskManager = () => {
-  const { getTodayLog, addTask, updateTask, toggleTask, moveTaskToTomorrow, deleteTask, loadUserData, dailyLogs } = useSupabaseStore();
+  const { 
+    getTodayLog, 
+    addTask, 
+    updateTask, 
+    toggleTask, 
+    moveTaskToTomorrow, 
+    deleteTask, 
+    loadUserData, 
+    dailyLogs,
+    isLoading,
+    hasError 
+  } = useSupabaseStore();
+  
   const [newTask, setNewTask] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [forceUpdate, setForceUpdate] = useState(0); // Force component re-render
+  const [activeTab, setActiveTab] = useState('today');
   
   const todayLog = getTodayLog();
   
-  // Listen for timer saves to refresh data
-  useEffect(() => {
-    const handleTimerSaved = () => {
-      loadUserData();
-    };
-    
-    window.addEventListener('timer-saved', handleTimerSaved);
-    return () => window.removeEventListener('timer-saved', handleTimerSaved);
-  }, [loadUserData]);
-  
-  // Get tomorrow's tasks with better handling
+  // Get tomorrow's tasks with better error handling
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDate = tomorrow.toISOString().split('T')[0];
@@ -38,23 +43,40 @@ const TaskManager = () => {
     tasks: []
   };
 
+  // Handle data refresh on mount and when there are errors
+  useEffect(() => {
+    if (hasError) {
+      console.log('TaskManager: Error detected, attempting to reload data');
+      loadUserData();
+    }
+  }, [hasError, loadUserData]);
+
+  // Listen for timer saves to refresh data
+  useEffect(() => {
+    const handleTimerSaved = () => {
+      console.log('TaskManager: Timer saved event received, refreshing data');
+      loadUserData();
+    };
+    
+    window.addEventListener('timer-saved', handleTimerSaved);
+    return () => window.removeEventListener('timer-saved', handleTimerSaved);
+  }, [loadUserData]);
+
   const handleAddTask = async (targetDate?: string) => {
     if (!newTask.trim()) return;
     
     setIsRefreshing(true);
     try {
+      console.log('TaskManager: Adding task', { title: newTask, targetDate });
       await addTask(newTask.trim(), undefined, targetDate);
       setNewTask("");
-      
-      // Force immediate update for tomorrow section
-      if (targetDate === 'tomorrow') {
-        setForceUpdate(prev => prev + 1);
-      }
-      
       toast.success("Task added successfully! ✅");
-      // Force immediate refresh
+      
+      // Force reload to ensure consistency
       await loadUserData();
+      console.log('TaskManager: Task added and data refreshed');
     } catch (error) {
+      console.error('TaskManager: Failed to add task', error);
       toast.error("Failed to add task");
     } finally {
       setIsRefreshing(false);
@@ -74,7 +96,9 @@ const TaskManager = () => {
       setEditingTaskId(null);
       setEditingTaskTitle("");
       toast.success("Task updated! ✅");
+      await loadUserData();
     } catch (error) {
+      console.error('TaskManager: Failed to update task', error);
       toast.error("Failed to update task");
     }
   };
@@ -90,8 +114,8 @@ const TaskManager = () => {
       await moveTaskToTomorrow(taskId);
       toast.success("Task moved to tomorrow ✅");
       await loadUserData();
-      setForceUpdate(prev => prev + 1); // Force update
     } catch (error) {
+      console.error('TaskManager: Failed to move task', error);
       toast.error("Failed to move task");
     } finally {
       setIsRefreshing(false);
@@ -104,22 +128,62 @@ const TaskManager = () => {
       await deleteTask(taskId);
       toast.success("Task deleted successfully! 🗑️");
       await loadUserData();
-      setForceUpdate(prev => prev + 1); // Force update
     } catch (error) {
+      console.error('TaskManager: Failed to delete task', error);
       toast.error("Failed to delete task");
     } finally {
       setIsRefreshing(false);
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadUserData();
+      toast.success("Data refreshed! ✅");
+    } catch (error) {
+      console.error('TaskManager: Failed to refresh data', error);
+      toast.error("Failed to refresh data");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in">
+        <div className="text-center space-y-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground font-poppins">Task Manager</h1>
+          <p className="text-sm sm:text-base text-muted-foreground font-poppins">Loading tasks...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in" key={forceUpdate}>
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in">
       <div className="text-center space-y-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground font-poppins">Task Manager</h1>
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground font-poppins">Task Manager</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="h-8 w-8 p-0"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
         <p className="text-sm sm:text-base text-muted-foreground font-poppins">Organize your daily tasks</p>
+        {hasError && (
+          <p className="text-sm text-destructive font-poppins">
+            Connection issue detected. Click refresh to retry.
+          </p>
+        )}
       </div>
 
-      <Tabs defaultValue="today" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 glassmorphism">
           <TabsTrigger value="today" className="data-[state=active]:glossy-gradient text-sm font-poppins">
             Today ({todayLog.tasks.filter(t => !t.completed).length})

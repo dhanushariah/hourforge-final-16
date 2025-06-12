@@ -41,7 +41,23 @@ const Index = () => {
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return (
+          <div>
+            <div className="p-4 text-center">
+              <div className="flex items-center justify-center space-x-3 mb-6">
+                <img 
+                  src="/lovable-uploads/1aff2475-2ece-414b-ad8c-e62f839d0063.png" 
+                  alt="HourForge Logo" 
+                  className="w-10 h-10 object-contain"
+                />
+                <h1 className="text-2xl font-bold gradient-text font-poppins">
+                  HourForge
+                </h1>
+              </div>
+            </div>
+            <Dashboard />
+          </div>
+        );
       case 'timer':
         return <ProductivityTimer />;
       case 'log':
@@ -53,7 +69,23 @@ const Index = () => {
       case 'profile':
         return <Profile />;
       default:
-        return <Dashboard />;
+        return (
+          <div>
+            <div className="p-4 text-center">
+              <div className="flex items-center justify-center space-x-3 mb-6">
+                <img 
+                  src="/lovable-uploads/1aff2475-2ece-414b-ad8c-e62f839d0063.png" 
+                  alt="HourForge Logo" 
+                  className="w-10 h-10 object-contain"
+                />
+                <h1 className="text-2xl font-bold gradient-text font-poppins">
+                  HourForge
+                </h1>
+              </div>
+            </div>
+            <Dashboard />
+          </div>
+        );
     }
   };
 
