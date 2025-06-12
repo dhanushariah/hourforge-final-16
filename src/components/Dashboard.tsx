@@ -1,21 +1,20 @@
-
 import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useSupabaseStore } from "@/hooks/useSupabaseStore";
-
 const Dashboard = () => {
-  const { getTodayLog, loadUserData } = useSupabaseStore();
-  
+  const {
+    getTodayLog,
+    loadUserData
+  } = useSupabaseStore();
   const todayLog = getTodayLog();
-  const dailyProgress = (todayLog.hours / 12) * 100;
+  const dailyProgress = todayLog.hours / 12 * 100;
 
   // Listen for timer saves to refresh data
   useEffect(() => {
     const handleTimerSaved = () => {
       loadUserData();
     };
-    
     window.addEventListener('timer-saved', handleTimerSaved);
     return () => window.removeEventListener('timer-saved', handleTimerSaved);
   }, [loadUserData]);
@@ -27,12 +26,10 @@ const Dashboard = () => {
     const daysPassed = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     const daysInYear = 365;
     const daysRemaining = daysInYear - daysPassed;
-    
     const goal = 4380; // 12 hours * 365 days
     const expectedCompleted = daysPassed * 12; // 12 hours per day expected
     const remainingHours = daysRemaining * 12;
-    const expectedPercentage = Math.min(100, (expectedCompleted / goal) * 100);
-
+    const expectedPercentage = Math.min(100, expectedCompleted / goal * 100);
     return {
       goal,
       expectedCompleted,
@@ -42,26 +39,20 @@ const Dashboard = () => {
       daysRemaining
     };
   };
-
   const yearlyProgress = getYearlyProgress();
-
   const getDailyTarget = () => {
     return {
-      target: 12, // Fixed 12 hours per day target
+      target: 12,
+      // Fixed 12 hours per day target
       daysRemaining: yearlyProgress.daysRemaining
     };
   };
-
   const dailyTarget = getDailyTarget();
-
-  return (
-    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in">
+  return <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 animate-fade-in">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold gradient-text">
-          HourForge
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Track your productive hours</p>
+        
+        
       </div>
 
       {/* Yearly Progress */}
@@ -73,10 +64,7 @@ const Dashboard = () => {
               <span>Expected Progress</span>
               <span className="font-medium">{yearlyProgress.expectedCompleted} hours</span>
             </div>
-            <Progress 
-              value={yearlyProgress.percentage} 
-              className="h-3 enhanced-progress" 
-            />
+            <Progress value={yearlyProgress.percentage} className="h-3 enhanced-progress" />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{yearlyProgress.percentage.toFixed(1)}% Complete</span>
               <span>{yearlyProgress.remainingHours} hours remaining</span>
@@ -167,8 +155,6 @@ const Dashboard = () => {
           </div>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Dashboard;
